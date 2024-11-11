@@ -26,14 +26,14 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
             file_path = os.path.join(dirpath, filename)
 
             try:
-                # ファイルを行ごとに読み込む
+                # ファイルを行ごとに読み込む             
                 with open(file_path, 'r', encoding='utf-8') as file:
-                    for line in file:
+                    for line_number, line in enumerate(file, start=1):  # 行番号をカウント
                         # ファイルの中身に対してキーワードを検索
                         for keyword in keywords:
                             if keyword in line:
                                 # 一致した場合、結果に追加
-                                results.append([filename, dirpath, keyword, line.strip()])
+                                results.append([filename, dirpath, keyword, line.strip(), line_number])
             except Exception as e:
                 print(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
 
@@ -45,7 +45,7 @@ def write_results_to_csv(results, output_dir):
     output_file = os.path.join(output_dir, f'output_2_{getTimeString()}.csv')
     with open(output_file, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        writer.writerow(['ファイル名', '親ディレクトリのパス', '一致したワード','1行分のレコード'])  # ヘッダー
+        writer.writerow(['ファイル名', '親ディレクトリのパス', '一致したワード','1行分のレコード','行目'])  # ヘッダー
         writer.writerows(results)
 
 def process_folder(dirname ,folder_path, keywords):

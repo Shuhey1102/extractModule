@@ -1,0 +1,11 @@
+public class or Interfce ○○{
+
+ testFunc() {
+
+ }
+
+ testFunc2() {
+
+ }
+
+}
