@@ -45,7 +45,7 @@ def write_results_to_csv(results, output_dir):
     output_file = os.path.join(output_dir, f'output_2_{getTimeString()}.csv')
     with open(output_file, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        writer.writerow(['ファイル名', '親ディレクトリのパス', '一致したワード','1行分のレコード','行目'])  # ヘッダー
+        writer.writerow(['FileName', 'ParentPath', 'targetWord','line','colNum']) 
         writer.writerows(results)
 
 def process_folder(dirname ,folder_path, keywords):

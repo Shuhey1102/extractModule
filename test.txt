@@ -1,3 +1,5 @@
+①1つ目の機能
+
 public class or Interfce ○○{
 
  testFunc() {
@@ -7,5 +9,39 @@ public class or Interfce ○○{
  testFunc2() {
 
  }
-
+ 
 }
+
+class毎に関数の一覧を出す
+→csv(これはフォルダ別にファイル出力)
+
+ファイル名は、jp_co_komatsu_emdw_domain.csvのような感じ
+※出力先は、カレントディレクトリの./output/funcList/の下におく
+
+EX)
+クラスorインターフェース,関数,開始行,終了行
+Test.Java,testFunc1,10,13
+Test.Java,testFunc2,15,18
+Test.Java,testFunc3,21,30
+
+
+②2つ目の機能(並列化を想定)
+
+import～のOutputを参照する(jp_co_komatsu_emdw_domain→jp.co.komatsu.emdw.domainに変換する)
+→一致するものを抽出
+
+　→import抜きのものがどこで使用されているか行を確認
+　　key:呼出関数
+　　value:[
+           [行],[行],[行]
+          ]
+    EOFまで読込んだら、上記のdictを、元に、①の機能のOutputの関数の中のどこに含まれるかを確認する
+
+　　key:Tuple(関数名,呼出関数) Valus：行
+
+③diconのComponentを読込んで、property name=sqlの中身を取得
+→イベントの結果、どんなSQLが取れるか取得可能なため
+
+
+
+
