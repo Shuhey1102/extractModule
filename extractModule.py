@@ -6,7 +6,6 @@ import datetime
 
 #current datetime
 dt_now = datetime.datetime.now()
-
 crrDir = os.path.dirname(__file__)
 
 def getTimeString():
@@ -15,6 +14,7 @@ def getTimeString():
     """        
     return dt_now.strftime('%Y%m%d%H%M%S')
 
+outputFilename = f"output_2_{getTimeString()}.csv"
 
 def search_files_for_keywords_in_folder(folder_path, keywords):
     # 結果を格納するリスト
@@ -42,7 +42,7 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
 def write_results_to_csv(results, output_dir):
     # 結果をCSVファイルに書き出し
     #os.makedirs(output_dir, exist_ok=True)
-    output_file = os.path.join(output_dir, f'output_2_{getTimeString()}.csv')
+    output_file = os.path.join(output_dir, outputFilename)
     with open(output_file, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerow(['FileName', 'ParentPath', 'targetWord','line','colNum']) 
@@ -83,6 +83,7 @@ def main():
                 executor.submit(process_folder, dirname ,folder_path, keywords)
 
     print("すべての検索結果がフォルダごとにoutput.csvに保存されました")
+    return outputFilename
 
 if __name__ == '__main__':
-    main()
+    SystemExit(main())

@@ -43,5 +43,4 @@ import～のOutputを参照する(jp_co_komatsu_emdw_domain→jp.co.komatsu.emdw
 →イベントの結果、どんなSQLが取れるか取得可能なため
 
 
-
-
+※階層違いで、同一CLASS名があるとおかしくなりそう？

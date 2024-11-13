@@ -10,9 +10,13 @@ import concurrent
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
 
+baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+
 class FunctionInfo:
     def __init__(self,function_Name, function_className ,function_signature, start_line, end_line):
-        self.FileName = function_Name.replace(".java","")
+        
+        self.FileName = function_Name.split("\\")[-1].replace(".java","")
+        self.ClassNameFull = function_Name
         self.className = function_className
         self.function_signature = function_signature
         self.function_name = function_signature.split('(')[0].split()[-1]
@@ -23,7 +27,7 @@ class FunctionInfo:
 
     def __repr__(self):
         return (f"FileName='{self.FileName}',ClassName='{self.className}',functionName='{self.function_name}', args='({self.arguments})', "
-                f"start_line={self.start_line}, end_line={self.end_line}")
+                f"start_line={self.start_line}, end_line={self.end_line},FileNameFull='{self.ClassNameFull}'")
 
 class JavaFileAnalyzer:
     class_pattern = re.compile(r'\b(public\s+class|interface)\s+\w+')
@@ -46,7 +50,7 @@ class JavaFileAnalyzer:
                 # Function Detection using `{` split to get function signature
                 if in_class_scope and self.method_pattern.search(line):
                     function_signature = line.strip().split('{')[0].strip()
-                    function_obj = FunctionInfo(file.name.split("\\")[-1],className,function_signature, line_number, None)
+                    function_obj = FunctionInfo(file.name,className,function_signature, line_number, None)
                     stack.append(function_obj)
 
                 # Scope End Detection
@@ -73,24 +77,24 @@ def analyze_java_files_in_directory(directory_path,targetName):
     os.mkdir(output_dir)
 
     output_file = output_dir +  "\\output.csv"
-    with open(output_file, mode='w', newline='', encoding='utf-8') as file:
+    with open(output_file, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        writer.writerow(['fileName','class', 'function', 'startNum','endNum']) 
+        writer.writerow(['fileName','class', 'function', 'startNum','endNum','fileName']) 
         for function in analyzer.get_functions():
-          writer.writerow([function.FileName,function.className, function.function_name, function.start_line, function.end_line])
+          writer.writerow([function.FileName,function.className, function.function_name, function.start_line, function.end_line,function.ClassNameFull])
 
     return analyzer.get_functions()
     
 def call(directory_path,baseURL):
 
     targetName=directory_path.replace(baseURL,"").replace("\\","_") 
+    
     functions = analyze_java_files_in_directory(directory_path,targetName)
     for func in functions:
         print(func)
+    return directory_path
 
 def runParalell(directory_path):
-
-    baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
     with ProcessPoolExecutor() as executor:
         futures = []
@@ -104,7 +108,8 @@ def runParalell(directory_path):
                 result = future.result()
             except Exception as e:
                 print(f"Error processing folder: {e}")    
-        
+
+
 if __name__ == "__main__":
 
     tmpOutput_dir = crrDir + "\\output\\list\\"
