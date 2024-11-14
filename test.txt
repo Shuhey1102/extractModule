@@ -34,7 +34,7 @@ import～のOutputを参照する(jp_co_komatsu_emdw_domain→jp.co.komatsu.emdw
  　リストに入れる
 　 呼び出される関数,パス+"\\"+ファイル名
 　　
-　　
+　
 　→import抜きのものがどこで使用されているか行を確認
 　　key:呼出関数
 　　value:[
@@ -46,7 +46,4 @@ import～のOutputを参照する(jp_co_komatsu_emdw_domain→jp.co.komatsu.emdw
 
 ③diconのComponentを読込んで、property name=sqlの中身を取得
 →イベントの結果、どんなSQLが取れるか取得可能なため
-
-
-
 

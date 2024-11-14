@@ -79,7 +79,7 @@ def analyze_java_files_in_directory(directory_path,targetName):
     output_file = output_dir +  "\\output.csv"
     with open(output_file, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        writer.writerow(['fileName','class', 'function', 'startNum','endNum','fileName']) 
+        writer.writerow(['fileName','class', 'function', 'startNum','endNum','fileNameFull']) 
         for function in analyzer.get_functions():
           writer.writerow([function.FileName,function.className, function.function_name, function.start_line, function.end_line,function.ClassNameFull])
 

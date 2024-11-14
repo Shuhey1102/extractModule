@@ -11,97 +11,71 @@ dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
 
 baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+importList = []
 
-class FunctionInfo:
-    def __init__(self,function_Name, function_className ,function_signature, start_line, end_line):
+def load_csv_to_objects(file_path):
+    objects = []
+    
+    # CSVファイルを一括ロード
+    with open(file_path, mode='r', encoding='utf-8') as file:
+        reader = csv.DictReader(file)  # ヘッダーをキーとした辞書形式で各行を取得
         
-        self.FileName = function_Name.split("\\")[-1].replace(".java","")
-        self.ClassNameFull = function_Name
-        self.className = function_className
-        self.function_signature = function_signature
-        self.function_name = function_signature.split('(')[0].split()[-1]
-        self.arguments = function_signature.split('(')[1].split(')')[0]
-        self.function_name_ful = self.function_name + "("+self.arguments+")"
-        self.start_line = start_line
-        self.end_line = end_line
-
-    def __repr__(self):
-        return (f"FileName='{self.FileName}',ClassName='{self.className}',functionName='{self.function_name}', args='({self.arguments})', "
-                f"start_line={self.start_line}, end_line={self.end_line},FileNameFull='{self.ClassNameFull}'")
-
-class JavaFileAnalyzer:
-    class_pattern = re.compile(r'\b(public\s+class|interface)\s+\w+')
-    method_pattern = re.compile(r'\b(public|protected|private|static|\s)\s+\w+\s+\w+\s*\(.*\)\s*\{')
-
-    def __init__(self):
-        self.functions = []
-
-    def analyze_file(self, file_path):
-        stack = []
-        in_class_scope = False
-
-        with open(file_path, 'r', encoding='utf-8') as file:
-            for line_number, line in enumerate(file, 1):
-                # Class or Interface Detection
-                if self.class_pattern.search(line):
-                    in_class_scope = True
-                    className = line.strip().split('{')[0].strip()                    
-
-                # Function Detection using `{` split to get function signature
-                if in_class_scope and self.method_pattern.search(line):
-                    function_signature = line.strip().split('{')[0].strip()
-                    function_obj = FunctionInfo(file.name,className,function_signature, line_number, None)
-                    stack.append(function_obj)
-
-                # Scope End Detection
-                if '}' in line:
-                    if len(stack)>0:
-                        function_obj = stack.pop()
-                        function_obj.end_line = line_number
-                        self.functions.append(function_obj)
-                    else:
-                        in_class_scope = False               
-
-    def get_functions(self):
-        return self.functions
-
-def analyze_java_files_in_directory(directory_path,targetName):
-    analyzer = JavaFileAnalyzer()
-    for root, _, files in os.walk(directory_path):
-        for file in files:
-            if file.endswith('.java'):
-                file_path = os.path.join(root, file)
-                analyzer.analyze_file(file_path)
-
-    output_dir = crrDir + "\\output\\list\\" + targetName    
-    os.mkdir(output_dir)
-
-    output_file = output_dir +  "\\output.csv"
-    with open(output_file, mode='a', newline='', encoding='utf-8') as file:
-        writer = csv.writer(file)
-        writer.writerow(['fileName','class', 'function', 'startNum','endNum','fileName']) 
-        for function in analyzer.get_functions():
-          writer.writerow([function.FileName,function.className, function.function_name, function.start_line, function.end_line,function.ClassNameFull])
-
-    return analyzer.get_functions()
+        # 各行を辞書形式でリストに格納
+        for row in reader:
+            obj = {}
+            for header, value in row.items():
+                keys = header.split('.')  # 'object.item1' のようなドット区切りのキーを分割
+                current_obj = obj
+                for key in keys[:-1]:  # ネストされた辞書を作成
+                    if key not in current_obj:
+                        current_obj[key] = {}
+                    current_obj = current_obj[key]
+                current_obj[keys[-1]] = value  # 最後の要素に値を割り当て
+            objects.append(obj)
     
-def call(directory_path,baseURL):
+    return objects
 
-    targetName=directory_path.replace(baseURL,"").replace("\\","_") 
+def load_csv_to_objects(file_path,baseURL):
+    objects = []
+ 
+    # CSVファイルを一括ロード
+    with open(file_path, mode='r', encoding='utf-8') as file:
+        reader = csv.DictReader(file)  # ヘッダーをキーとした辞書形式で各行を取得
+        
+        # 各行を辞書形式でリストに格納
+        for row in reader:
+            obj = {}
+            for header, value in row.items():
+                keys = header.split('.')  # 'object.item1' のようなドット区切りのキーを分割
+                current_obj = obj
+                for key in keys[:-1]:  # ネストされた辞書を作成
+                    if key not in current_obj:
+                        current_obj[key] = {}
+                    current_obj = current_obj[key]
+
+                if header == "fileNameFull":
+                    value = value.replace(baseURL,"").replace("\\",".").replace(".java","")
+
+                current_obj[keys[-1]] = value  # 最後の要素に値を割り当て
+            objects.append(obj)
     
-    functions = analyze_java_files_in_directory(directory_path,targetName)
-    for func in functions:
-        print(func)
-    return directory_path
+    return objects
 
-def runParalell(directory_path):
 
+def call(file_path,baseURL):
+
+    callFunction = load_csv_to_objects(file_path,baseURL)
+
+
+def runParalell(directory_path,procFile):
+
+    #runParalell
     with ProcessPoolExecutor() as executor:
         futures = []
         for entry in os.scandir(directory_path):
             if entry.is_dir(): 
-                folder_path = entry.path
-                futures.append(executor.submit(call,folder_path, baseURL))
+                file_path = entry.path+"\\output.csv"
+                futures.append(executor.submit(call,file_path, baseURL))
 
         for future in concurrent.futures.as_completed(futures):
             try:
@@ -112,12 +86,14 @@ def runParalell(directory_path):
 
 if __name__ == "__main__":
 
-    tmpOutput_dir = crrDir + "\\output\\list\\"
-    if os.path.isdir(tmpOutput_dir):
-        shutil.rmtree(tmpOutput_dir)
-    if not(os.path.isdir(tmpOutput_dir)):    
-        os.mkdir(tmpOutput_dir)
+    # tmpOutput_dir = crrDir + "\\output\\list\\"
+    # if os.path.isdir(tmpOutput_dir):
+    #     shutil.rmtree(tmpOutput_dir)
+    # if not(os.path.isdir(tmpOutput_dir)):    
+    #     os.mkdir(tmpOutput_dir)
+    #commonRec
+    importList = load_csv_to_objects(input("セットする対象ファイルパス:"))
 
     #run('N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\jp\\co\\komatsu\\emdw\\business\\service\\impl',"N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\")
-    runParalell(input("パスを選択してください:"))
+    runParalell(input("プロセスフォルダ:"))
     #runParalell("N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\jp\\co\\komatsu\\emdw\\")
