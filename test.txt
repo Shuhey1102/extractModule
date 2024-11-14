@@ -27,9 +27,14 @@ Test.Java,testFunc3,21,30
 
 ②2つ目の機能(並列化を想定)
 
+jp_co_komatsu_emdw_domain
 import～のOutputを参照する(jp_co_komatsu_emdw_domain→jp.co.komatsu.emdw.domainに変換する)
 →一致するものを抽出
 
+ 　リストに入れる
+　 呼び出される関数,パス+"\\"+ファイル名
+　　
+　　
 　→import抜きのものがどこで使用されているか行を確認
 　　key:呼出関数
 　　value:[
@@ -43,4 +48,5 @@ import～のOutputを参照する(jp_co_komatsu_emdw_domain→jp.co.komatsu.emdw
 →イベントの結果、どんなSQLが取れるか取得可能なため
 
 
-※階層違いで、同一CLASS名があるとおかしくなりそう？
+
+
