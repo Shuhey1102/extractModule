@@ -10,8 +10,8 @@ import concurrent
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
 
-#baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
-baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
+#baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
 class FunctionInfo:
     def __init__(self,function_Name, function_className ,function_signature, start_line, end_line):
@@ -31,14 +31,15 @@ class FunctionInfo:
                 f"start_line={self.start_line}, end_line={self.end_line},FileNameFull='{self.ClassNameFull}'")
 
 class JavaFileAnalyzer:
-    class_pattern = re.compile(r'\b(public\s+class|interface)\s+\w+')
-    method_pattern = re.compile(r'\b(public|protected|private|static|\s)\s+\w+\s+\w+\s*\(.*\)\s*\{')
+    class_pattern = re.compile(r'\b(public\s+)?(final\s+)?(class|interface)\s+\w+')
+    method_pattern = re.compile(r'\b(public|protected|private|static|final|\s)\s+(static|final|\s)?\s*\w+\s+\w+\s*\(.*\)\s*\{')
 
     def __init__(self):
         self.functions = []
 
     def analyze_file(self, file_path):
         stack = []
+        dummy_stack = []
         in_class_scope = False
 
         with open(file_path, 'r', encoding='utf-8') as file:
@@ -54,14 +55,25 @@ class JavaFileAnalyzer:
                     function_obj = FunctionInfo(file.name,className,function_signature, line_number, None)
                     stack.append(function_obj)
 
-                # Scope End Detection
-                if '}' in line:
-                    if len(stack)>0:
+
+                # Count opening braces `{` in the line
+                opening_braces = line.count('{')
+                for _ in range(opening_braces):
+                    if in_class_scope and self.method_pattern.search(line):
+                        continue  # メソッドの `{` はすでに処理済み
+                    dummy_stack.append('{')
+
+                # Count closing braces `}` in the line
+                closing_braces = line.count('}')
+                for _ in range(closing_braces):
+                    if dummy_stack:
+                        dummy_stack.pop()
+                    elif stack:
                         function_obj = stack.pop()
                         function_obj.end_line = line_number
                         self.functions.append(function_obj)
                     else:
-                        in_class_scope = False               
+                        in_class_scope = False  # クラススコープ終了
 
     def get_functions(self):
         return self.functions
@@ -83,6 +95,7 @@ def analyze_java_files_in_directory(directory_path,targetName):
         writer.writerow(['fileName','class', 'function', 'startNum','endNum','fileNameFull']) 
         for function in analyzer.get_functions():
           writer.writerow([function.FileName,function.className, function.function_name, function.start_line, function.end_line,function.ClassNameFull])
+        
 
     return analyzer.get_functions()
     
@@ -96,6 +109,21 @@ def call(directory_path,baseURL):
     return directory_path
 
 def runParalell(directory_path):
+
+    # for entry in os.scandir(directory_path):
+    #     if entry.is_dir(): 
+    #         folder_path = entry.path
+    #         if folder_path != "C:\emd-web-struts2.5\emd-web-struts2.5\src\jp\co\komatsu\emdw\common":
+    #             continue
+    #         call(folder_path, baseURL)                
+
+        # for future in concurrent.futures.as_completed(futures):
+        #     try:
+        #         result = future.result()
+        #     except Exception as e:
+        #         print(f"Error processing folder: {e}")    
+
+
 
     with ProcessPoolExecutor() as executor:
         futures = []

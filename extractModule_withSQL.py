@@ -15,7 +15,7 @@ def getTimeString():
     """        
     return dt_now.strftime('%Y%m%d%H%M%S')
 
-outputFilename = f"output_2_{getTimeString()}.csv"
+outputFilename = f"output_sql_{getTimeString()}.csv"
 
 def search_files_for_keywords_in_folder(folder_path, keywords):
     # 結果を格納するリスト
