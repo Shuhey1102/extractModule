@@ -10,7 +10,8 @@ import concurrent
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
 
-baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
+#baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
 class FunctionInfo:
     def __init__(self,function_Name, function_className ,function_signature, start_line, end_line):
@@ -101,7 +102,7 @@ def runParalell(directory_path):
         for entry in os.scandir(directory_path):
             if entry.is_dir(): 
                 folder_path = entry.path
-                futures.append(executor.submit(call,folder_path, baseURL))
+                futures.append(executor.submit(call,folder_path, baseURL))                
 
         for future in concurrent.futures.as_completed(futures):
             try:

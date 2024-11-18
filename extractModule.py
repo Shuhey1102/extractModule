@@ -3,6 +3,7 @@ import csv
 from concurrent.futures import ProcessPoolExecutor
 import extractSQL_lib
 import datetime
+import concurrent
 
 #current datetime
 dt_now = datetime.datetime.now()
@@ -36,28 +37,23 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
                                 # 一致した場合、結果に追加
                                 results.append([filename, dirpath, keyword, line.strip(), line_number])                                
             except Exception as e:
-                print(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
+                raise Exception(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
 
     return results
 
-def write_results_to_csv(results, output_dir):
+def write_results_to_csv(results, output_dir,cnt):
     # 結果をCSVファイルに書き出し
     #os.makedirs(output_dir, exist_ok=True)
     output_file = os.path.join(output_dir, outputFilename)
     with open(output_file, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        writer.writerow(['FileName', 'ParentPath', 'targetWord','line','colNum']) 
-        writer.writerows(results)
+        if cnt == 0 :
+            writer.writerow(['FileName', 'ParentPath', 'targetWord','line','Funcition','colNum','header/detail']) 
+        writer.writerows(results)    
 
 def process_folder(dirname ,folder_path, keywords):
     # フォルダ内のファイルを検索して結果を取得
-    results = search_files_for_keywords_in_folder(folder_path, keywords)
-
-    # 結果をフォルダごとのoutput.csvに書き出し
-    if results:
-        #output_dir = os.path.join(folder_path, 'output')
-        output_dir = f"{crrDir}\\output\\"
-        write_results_to_csv(results, output_dir)
+    return search_files_for_keywords_in_folder(folder_path, keywords)
 
 def main():
     # キーワードリストを直接指定
@@ -76,15 +72,32 @@ def main():
 
     # サブフォルダごとに並行で検索処理を実行
     with ProcessPoolExecutor() as executor:
+        futures = []
         # フォルダごとに検索処理を並行で実行
         for dirpath, dirnames, _ in os.walk(root_dir):
             # サブフォルダごとに処理を開始
             for dirname in dirnames:
                 folder_path = os.path.join(dirpath, dirname)
-                executor.submit(process_folder, dirname ,folder_path, keywords)
+                futures.append(executor.submit(process_folder, dirname ,folder_path, keywords))
+
+    cnt = 0
+    for future in concurrent.futures.as_completed(futures):
+        try:
+            results = future.result()
+
+            # 結果をフォルダごとのoutput.csvに書き出し
+            if results:
+                #output_dir = os.path.join(folder_path, 'output')
+                output_dir = f"{crrDir}\\output\\"                                
+                write_results_to_csv(results, output_dir,cnt)
+            cnt+=1
+
+        except Exception as e:
+            print(f"Error processing folder: {e}")
+            SystemExit(1)
 
     print("すべての検索結果がフォルダごとにoutput.csvに保存されました")
     return outputFilename
 
 if __name__ == '__main__':
-    SystemExit(main())
+    main()
