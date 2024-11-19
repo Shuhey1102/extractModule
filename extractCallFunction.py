@@ -10,8 +10,8 @@ import concurrent
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
 
-baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
-#baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+#baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
+baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 importList = []
 importList_header = []
 importList_detail = []
@@ -211,10 +211,18 @@ def runParalell(directory_path,importList_header,importList_detail):
 
         for future in concurrent.futures.as_completed(futures):
             try:
-                resultList.append(future.result())                
+                resultList.update(future.result())                            
             except Exception as e:
                 print(f"Error processing folder: {e}")    
 
+        # for resultKey,resultValue in resultList:
+        #     for resultChKey,resultChValue in resultValue:
+        #         for resultChKey in resultList.keys:
+        #             resultList[resultChKey][2] = True
+
+        # for resultKey,resultValue in resultList:
+        #     for resultChKey,resultChValue in [item for item in resultValue if item[2] == False]:
+                
 
 if __name__ == "__main__":
 

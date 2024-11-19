@@ -39,6 +39,7 @@ def search_files_in_directory(root_dir, pattern):
                 for match in matches:
                     name_values = re.findall(r'name="([^"]+)"', match)                    
                     results.append(name_values[0])
+                    
 
             except Exception as e:
                 print(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
