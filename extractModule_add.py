@@ -3,6 +3,7 @@ import csv
 from concurrent.futures import ProcessPoolExecutor
 import extractSQL_lib
 import datetime
+import re
 import concurrent
 
 deleteList = ["import",";"]
@@ -22,17 +23,21 @@ outputFilename = f"output_{getTimeString()}.csv"
 def search_files_for_keywords_in_folder(folder_path, keywords):
     # 結果を格納するリスト
     results = []
-    
+        
     # フォルダ内の全てのファイルを走査
     for dirpath, _, filenames in os.walk(folder_path):
         for filename in filenames:
             file_path = os.path.join(dirpath, filename)
-
+            pattern = ""
+            
             try:
                 # ファイルを行ごとに読み込む             
                 with open(file_path, 'r', encoding='utf-8') as file:
+                    serchVal = []
                     details = []
+                    havetoSerch = False
                     for line_number, line in enumerate(file, start=1):  # 行番号をカウント
+
                         # ファイルの中身に対してキーワードを検索
                         for keyword in keywords:
                             if keyword in line:
@@ -44,15 +49,26 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
                                         seachName=seachName.replace(str(dele),"")
                                     seachName=seachName.strip().split('.')[-1]
 
-                                    details.append(seachName)
+                                    details.append([seachName,seachName])
+                                    serchVal.append(seachName)
+                                    havetoSerch = True
 
                                 results.append([filename, dirpath, keyword, line.strip(),seachName, line_number,"h"])                                
-
+                        
+                                                    
                         for detail in details:
-                            if detail in line and not(line.strip().startswith("import")):
+                            if detail[0] in line and not(line.strip().startswith("import")):
                                 # 一致した場合、結果に追加
-                                results.append([filename, dirpath, detail, line.strip(), detail, line_number,"d"])
+                                results.append([filename, dirpath, detail[0], line.strip(), detail[1], line_number,"d"])
 
+                        if not(line.strip().startswith("import")) and havetoSerch:                        
+                            class_pattern = "|".join(re.escape(item) for item in serchVal)
+                            pattern = rf"(\w+)\s*=\s*new\s+({class_pattern})\s*\(.*?\);"
+                            match = re.match(pattern, line.strip())
+                            if match:                                        
+                                details.append([match.group(1),match.group(2)])
+                                havetoSerch = False
+                            
             except Exception as e:
                 raise Exception(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
 
@@ -109,7 +125,6 @@ def main():
                 write_results_to_csv(results, output_dir,cnt)
 
             cnt+=1
-
 
         except Exception as e:
             print(f"Error processing folder: {e}")

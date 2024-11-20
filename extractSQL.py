@@ -14,10 +14,6 @@ def getTimeString():
     """        
     return dt_now.strftime('%Y%m%d%H%M%S')
 
-import os
-import re
-import csv
-
 def search_files_in_directory(root_dir, pattern):
     # 正規表現パターンをコンパイル
     regex = re.compile(pattern)

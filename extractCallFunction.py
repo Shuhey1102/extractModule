@@ -5,6 +5,7 @@ import csv
 import shutil
 from concurrent.futures import ProcessPoolExecutor
 import concurrent
+from openpyxl import Workbook
 
 #current datetime
 dt_now = datetime.datetime.now()
@@ -66,7 +67,7 @@ def load_csv_to_objects(file_path):
 
 
 
-def extract_functions(line):
+def extract_functions(line,function_pattern):
     """
     階層的な関数呼び出しから、クラス名と関数名をすべて抽出する。
 
@@ -77,17 +78,18 @@ def extract_functions(line):
         list: 抽出された (クラス名, 関数名) のタプルのリスト。
     """
     # 正規表現: クラス名.関数名(任意の引数)
-    regex = re.compile(r"(\w+)\.(\w+)\(")
+    regex = re.compile(rf"(\w+)\.({function_pattern})\(")
     matches = regex.findall(line)
 
     return matches
 
-def extract_nested_functions(line):
+def extract_nested_functions(line,function_pattern):
     """
     階層的な関数呼び出しからすべてのクラス名と関数名を再帰的に抽出する。
 
     Args:
         line (str): 関数呼び出しの文字列。
+        function_pattern(str):
 
     Returns:
         list: 抽出された (クラス名, 関数名) のタプルのリスト。
@@ -96,7 +98,7 @@ def extract_nested_functions(line):
     results = []
     
     # 最外層の関数呼び出しを抽出
-    matches = extract_functions(line)
+    matches = extract_functions(line,function_pattern)
     results.extend(matches)
     
     # 各マッチについて、引数部分を再解析
@@ -137,7 +139,7 @@ def call(file_path,target,processdict,importList_header,importList_detail):
             tmpFunctionList = [item for item in processdict[calleeKey] if item["fileName"] == data_header["Funcition"]]
 
             function_pattern = "|".join(map(re.escape, [item["function"] for item in tmpFunctionList]))
-            regex = re.compile(rf"\b(\w+)\.({function_pattern})\s*\(")      
+            #regex = re.compile(rf"\b(\w+)\.({function_pattern})\s*\(")      
 
             
             filtered_data_detail = [item for item in importList_detail 
@@ -145,33 +147,86 @@ def call(file_path,target,processdict,importList_header,importList_detail):
                                         and (not(item["line"].startswith("//")) or not(item["line"].startswith("/*")))]     
             
             for data_detail in filtered_data_detail:
-                matches = extract_nested_functions(data_detail["line"])            
+                matches = extract_nested_functions(data_detail["line"],function_pattern)            
                 callee_function_name = ""
+                callee_instance_name =  "" 
                 callee_class_name = ""
                 caller_function_name = ""
                 
                 if len(matches) > 0 and len(tmpFunctionList) > 0:
                     
                     for match in matches:
-                        callee_class_name, callee_function_name = (match[0],match[1])
+                        callee_instance_name, callee_function_name = (match[0],match[1])
+                        callee_class_name = data_detail["Funcition"]
 
                         #Check Caller Func
                         for callerFunction in  [item for item in targetProcess if item["fileName"] == callFunc["fileName"]and item["fileNameFull"]==callFunc["fileNameFull"]] :                   
                             if int(callerFunction["startNum"]) <= int(data_detail["colNum"]) <= int(callerFunction["endNum"]):
                                 caller_function_name = callerFunction["function"]
+                                break
 
-                        parentKey = callFunc["function"] + "_" + callFunc["fileNameFull"]
+                        parentKey = caller_function_name + "_" + callFunc["fileNameFull"]
                         childKey = callee_function_name + "_" + tmpFunctionList[0]["fileNameFull"]
-                        tmpDist[childKey] =  [caller_function_name+"_"+ callFunc["fileName"], callee_function_name+"_"+ callee_class_name,False] #0:caller / 1:callee
-                        retDist[parentKey] = tmpDist
+                        
+                        if (parentKey,childKey) in retDist :
+                            continue
+                        
+                        retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc["fileName"], callee_function_name+"_"+ callee_class_name,False] #0:caller / 1:callee
                         print(parentKey+","+childKey+","+caller_function_name+"_"+ callFunc["fileName"]+","+callee_function_name+"_"+ callee_class_name)
                 else:
                     parentKey = callFunc["function"] + "_" + callFunc["fileNameFull"]
                     childKey = "None"
-                    tmpDist[childKey] =  None
-                    retDist[parentKey] = tmpDist
-                    print(parentKey+",'',"+caller_function_name+"_"+ callFunc["fileName"]+",''")
+                    #retDist[(parentKey,childKey)] = None
+                    print(parentKey+",'',"+ callFunc["function"]+"_"+ callFunc["fileName"]+",''")
     return retDist
+
+def writeItem(outputFile,resultList):
+
+    #Excel出力
+
+    # 新しいワークブックを作成
+    wb = Workbook()
+
+    # アクティブなシートを取得
+    ws = wb.active
+
+    # データを追加
+    ws.title = "イベントシート"
+    
+    calRow=1
+    calCol=1
+
+    for i in range(15):
+        ws.cell(row=calRow, column=calCol, value=f"区分{calRow}")
+        calRow+=1
+    
+    for outputKey,outputValue in ((key, value) for key, value in resultList.items() if not value[2]):
+
+        calCol+=1
+        calRow=1     
+        
+        ws.cell(row=calRow, column=calCol, value=f"{outputValue[0]}")
+        calRow+=1
+        ws.cell(row=calRow, column=calCol, value=f"{outputValue[1]}")
+
+        writeItemRecusively(ws,calRow,calCol,outputKey,resultList)
+
+
+    # ファイルに保存
+    wb.save(f"{outputFile}")
+
+def writeItemRecusively(ws,calRow,calCol,outputKey,resultList):
+
+        filteredDict = {tkey:tvalue for tkey,tvalue in resultList.items() if tkey[0] == outputKey[1]}
+        tmpCalRow=calRow + 1
+
+        if len(filteredDict)==0:
+            return
+        else:
+            for key,value in filteredDict:
+                ws.cell(row=tmpCalRow, column=calCol, value=f"{value[1]}")
+                writeItemRecusively(ws,tmpCalRow,calCol,key,resultList)
+
 
 
 def runParalell(directory_path,importList_header,importList_detail):
@@ -213,16 +268,22 @@ def runParalell(directory_path,importList_header,importList_detail):
             try:
                 resultList.update(future.result())                            
             except Exception as e:
-                print(f"Error processing folder: {e}")    
+                print(f"Error processing folder: {e}") 
 
         # for resultKey,resultValue in resultList:
         #     for resultChKey,resultChValue in resultValue:
         #         for resultChKey in resultList.keys:
         #             resultList[resultChKey][2] = True
 
-        # for resultKey,resultValue in resultList:
-        #     for resultChKey,resultChValue in [item for item in resultValue if item[2] == False]:
-                
+    for resultKey,resultValue in resultList:
+        if any(resultKey[0] == key[1] for key in resultList.keys()):
+            resultList[resultKey][2] = True
+        
+    
+
+    print("Excelファイル 'sample.xlsx' を作成しました！")
+
+    print("OK")
 
 if __name__ == "__main__":
 
