@@ -104,7 +104,7 @@ def main():
     root_dir = input("検索対象のフォルダ: ")
 
     # サブフォルダごとに並行で検索処理を実行
-    with ProcessPoolExecutor() as executor:
+    with ProcessPoolExecutor(max_workers=5) as executor:
         futures = []
         # フォルダごとに検索処理を並行で実行
         for dirpath, dirnames, _ in os.walk(root_dir):
