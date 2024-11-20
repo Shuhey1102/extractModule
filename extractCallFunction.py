@@ -110,7 +110,7 @@ def extract_nested_functions(line,function_pattern):
         if start_index < end_index:
             nested_content = line[start_index:end_index]
             # 再帰的にネストされた部分を解析
-            results.extend(extract_nested_functions(nested_content))
+            results.extend(extract_nested_functions(nested_content,function_pattern))
     
     return results
 
@@ -279,7 +279,7 @@ def runParalell(directory_path,importList_header,importList_detail):
         if any(resultKey[0] == key[1] for key in resultList.keys()):
             resultList[resultKey][2] = True
         
-    
+    writeItem("./output.xlsx",resultList)
 
     print("Excelファイル 'sample.xlsx' を作成しました！")
 

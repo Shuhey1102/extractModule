@@ -79,6 +79,7 @@ def main():
             for dirname in dirnames:
                 folder_path = os.path.join(dirpath, dirname)
                 futures.append(executor.submit(process_folder, dirname ,folder_path, keywords))
+                
 
     cnt = 0
     for future in concurrent.futures.as_completed(futures):
