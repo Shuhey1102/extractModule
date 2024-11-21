@@ -169,7 +169,7 @@ def call(file_path,target,processdict,importList_header,importList_detail):
                                 break
 
                         parentKey = caller_function_name + "_" + callFunc["fileNameFull"]
-                        childKey = callee_function_name + "_" + tmpFunctionList[0]["fileNameFull"]
+                        childKey = callee_function_name + "_" + [item["fileNameFull"] for item in tmpFunctionList if item["function"] == callee_function_name][0]
                         
                         if (parentKey,childKey) in retDist :
                             continue
@@ -200,7 +200,7 @@ def writeItem(outputFile,resultList):
     calCol=1
 
     for i in range(15):
-        ws.cell(row=calRow, column=calCol, value=f"区分{calRow}")
+        ws.cell(row=calRow, column=calCol, value=f"区分{calCol}")
         calCol+=1
     
     for outputKey,outputValue in ((key, value) for key, value in resultList.items() if not value[2]):
@@ -209,7 +209,7 @@ def writeItem(outputFile,resultList):
         calCol=1     
         
         ws.cell(row=calRow, column=calCol, value=f"{outputValue[0]}")
-        calRow+=1
+        calCol+=1
         ws.cell(row=calRow, column=calCol, value=f"{outputValue[1]}")
 
         writeItemRecusively(ws,calRow,calCol,outputKey,resultList)
@@ -222,14 +222,17 @@ def writeItemRecusively(ws,calRow,calCol,outputKey,resultList):
 
         filteredDict = {tkey:tvalue for tkey,tvalue in resultList.items() if tkey[0] == outputKey[1]}
         tmpCalCol=calCol + 1
+        tmpCalRow=calRow
 
         if len(filteredDict)==0:
             return
         else:
             for key,value in filteredDict:
                 ws.cell(row=calRow, column=tmpCalCol, value=f"{value[1]}")
-                writeItemRecusively(ws,calRow,tmpCalCol,key,resultList)
-
+                ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key,resultList)
+                tmpCalRow=tmpCalRow+1
+                
+        return(tmpCalRow)
 
 
 def runParalell(directory_path,importList_header,importList_detail):
@@ -297,7 +300,7 @@ def runParalell(directory_path,importList_header,importList_detail):
         for resultKey,resultValue in resultList.items():
             if any(resultKey[0] == key[1] for key in resultList.keys()):
                 resultList[resultKey][2] = True
-                writer.writerow([resultKey[0],resultKey[1],resultValue[0],resultValue[1],resultValue[2]])
+            writer.writerow([resultKey[0],resultKey[1],resultValue[0],resultValue[1],resultValue[2]])
         
     writeItem("./output.xlsx",resultList)
 
