@@ -221,16 +221,17 @@ def writeItem(outputFile,resultList):
 def writeItemRecusively(ws,calRow,calCol,outputKey,resultList):
 
         filteredDict = {tkey:tvalue for tkey,tvalue in resultList.items() if tkey[0] == outputKey[1]}
-        tmpCalCol=calCol + 1
         tmpCalRow=calRow
-
+            
         if len(filteredDict)==0:
-            return
+            return(tmpCalRow)
         else:
+            tmpCalCol=calCol + 1
             for key,value in filteredDict:
                 ws.cell(row=calRow, column=tmpCalCol, value=f"{value[1]}")
                 ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key,resultList)
-                tmpCalRow=tmpCalRow+1
+                tmpCalRow=ret+1
+                
                 
         return(tmpCalRow)
 
