@@ -137,7 +137,7 @@ def call(file_path,target,processdict,importList_header,importList_detail):
             if data_header["line"].startswith("//") or data_header["line"].startswith("/*"):
                 continue
             calleeKey = ".".join(data_header["line"].replace("import","").replace(";","").strip().split(".")[:colNum])
-            tmpFunctionList = [item for item in processdict[calleeKey] if item["fileName"] == data_header["Funcition"]]
+            tmpFunctionList = [item for item in processdict[calleeKey] if (item["fileName"] == data_header["Funcition"] or item["fileName"] == (data_header["Funcition"] + "Impl"))]
 
             function_pattern = "|".join(map(re.escape, [item["function"] for item in tmpFunctionList]))
             #regex = re.compile(rf"\b(\w+)\.({function_pattern})\s*\(")      
@@ -201,12 +201,12 @@ def writeItem(outputFile,resultList):
 
     for i in range(15):
         ws.cell(row=calRow, column=calCol, value=f"区分{calRow}")
-        calRow+=1
+        calCol+=1
     
     for outputKey,outputValue in ((key, value) for key, value in resultList.items() if not value[2]):
 
-        calCol+=1
-        calRow=1     
+        calRow+=1
+        calCol=1     
         
         ws.cell(row=calRow, column=calCol, value=f"{outputValue[0]}")
         calRow+=1
@@ -221,14 +221,14 @@ def writeItem(outputFile,resultList):
 def writeItemRecusively(ws,calRow,calCol,outputKey,resultList):
 
         filteredDict = {tkey:tvalue for tkey,tvalue in resultList.items() if tkey[0] == outputKey[1]}
-        tmpCalRow=calRow + 1
+        tmpCalCol=calCol + 1
 
         if len(filteredDict)==0:
             return
         else:
             for key,value in filteredDict:
-                ws.cell(row=tmpCalRow, column=calCol, value=f"{value[1]}")
-                writeItemRecusively(ws,tmpCalRow,calCol,key,resultList)
+                ws.cell(row=calRow, column=tmpCalCol, value=f"{value[1]}")
+                writeItemRecusively(ws,calRow,tmpCalCol,key,resultList)
 
 
 
@@ -261,8 +261,7 @@ def runParalell(directory_path,importList_header,importList_detail):
 
     resultList = {}
 
-    targetURL = "c:\\app\\extractModule\\output\\list\\jp_co_komatsu_emdw_web"
-
+    # targetURL = "c:\\app\\extractModule\\output\\list\\jp_co_komatsu_emdw_web"
     # for entry in os.scandir(directory_path):
 
     #     if entry.is_dir(): 
@@ -288,14 +287,17 @@ def runParalell(directory_path,importList_header,importList_detail):
         except Exception as e:
             print(f"Error processing folder: {e}") 
 
-    for resultKey,resultValue in resultList:
-        for resultChKey,resultChValue in resultValue:
-            for resultChKey in resultList.keys:
-                resultList[resultChKey][2] = True
-
-    for resultKey,resultValue in resultList:
-        if any(resultKey[0] == key[1] for key in resultList.keys()):
-            resultList[resultKey][2] = True
+    # for resultKey,resultValue in resultList.items():
+    #     if any(resultKey[0] == key[1] for key in resultList.keys()):
+    #         resultList[resultKey][2] = True
+    
+    output_file = crrDir +  "\\output_TMP.csv"
+    with open(output_file, mode='a', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        for resultKey,resultValue in resultList.items():
+            if any(resultKey[0] == key[1] for key in resultList.keys()):
+                resultList[resultKey][2] = True
+                writer.writerow([resultKey[0],resultKey[1],resultValue[0],resultValue[1],resultValue[2]])
         
     writeItem("./output.xlsx",resultList)
 
