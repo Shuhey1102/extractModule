@@ -212,7 +212,7 @@ def writeItem(outputFile,resultList):
         calCol+=1
         ws.cell(row=calRow, column=calCol, value=f"{outputValue[1]}")
 
-        writeItemRecusively(ws,calRow,calCol,outputKey,resultList)
+        calRow = writeItemRecusively(ws,calRow,calCol,outputKey,resultList)
 
 
     # ファイルに保存
@@ -303,6 +303,7 @@ def runParalell(directory_path,importList_header,importList_detail):
                 resultList[resultKey][2] = True
             writer.writerow([resultKey[0],resultKey[1],resultValue[0],resultValue[1],resultValue[2]])
         
+
     writeItem("./output.xlsx",resultList)
 
     print("Excelファイル 'output.xlsx' を作成しました！")
