@@ -36,6 +36,8 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
                     serchVal = []
                     details = []
                     havetoSerch = False
+                    havetoSerch2 = False
+                    
                     for line_number, line in enumerate(file, start=1):  # 行番号をカウント
 
                         # ファイルの中身に対してキーワードを検索
@@ -52,23 +54,34 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
                                     details.append([seachName,seachName])
                                     serchVal.append(seachName)
                                     havetoSerch = True
+                                    havetoSerch2 = True
 
                                 results.append([filename, dirpath, keyword, line.strip(),seachName, line_number,"h"])                                
                         
                                                     
                         for detail in details:
-                            if detail[0] in line and not(line.strip().startswith("import")):
+                            if detail[1] in line and not(line.strip().startswith("import")):
                                 # 一致した場合、結果に追加
-                                results.append([filename, dirpath, detail[0], line.strip(), detail[1], line_number,"d"])
+                                results.append([filename, dirpath, detail[1], line.strip(), detail[0], line_number,"d"])
 
                         if not(line.strip().startswith("import")) and havetoSerch:                        
                             class_pattern = "|".join(re.escape(item) for item in serchVal)
                             pattern = rf"(\w+)\s*=\s*new\s+({class_pattern})\s*\(.*?\);"
-                            match = re.match(pattern, line.strip())
-                            if match:                                        
+                            
+                            for match in re.finditer(pattern, line.strip()):
+                            
                                 details.append([match.group(1),match.group(2)])
                                 havetoSerch = False
+
+                        if not(line.strip().startswith("import")) and havetoSerch2:                        
+                            class_pattern = "|".join(re.escape(item) for item in serchVal)
+                            pattern =  rf"(?:private|public|protected|static)?\s*(?:final\s+)?({class_pattern})\s+(\w+);"
+                            for match in re.finditer(pattern, line.strip()):
                             
+                                details.append([match.group(1),match.group(2)])
+                                havetoSerch2 = False
+
+
             except Exception as e:
                 raise Exception(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
 

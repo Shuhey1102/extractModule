@@ -11,8 +11,9 @@ from openpyxl import Workbook
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
 
-#baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
-baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
+#baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+
 importList = []
 importList_header = []
 importList_detail = []
@@ -146,6 +147,8 @@ def call(file_path,target,processdict,importList_header,importList_detail):
                                         if item["FileName"]==data_header["FileName"] and item["ParentPath"]==data_header["ParentPath"] and item["Funcition"]==data_header["Funcition"]
                                         and (not(item["line"].startswith("//")) or not(item["line"].startswith("/*")))]     
             
+
+
             for data_detail in filtered_data_detail:
                 matches = extract_nested_functions(data_detail["line"],function_pattern)            
                 callee_function_name = ""
@@ -255,7 +258,22 @@ def runParalell(directory_path,importList_header,importList_detail):
     #         target = entry.path.split("\\")[-1].replace("_",".")
     #         call(file_path,target,processdict,importList_header,importList_detail)
 
+
     resultList = {}
+
+    targetURL = "c:\\app\\extractModule\\output\\list\\jp_co_komatsu_emdw_web"
+
+    # for entry in os.scandir(directory_path):
+
+    #     if entry.is_dir(): 
+    #         file_path = entry.path+"\\output.csv"
+    #         target = entry.path.split("\\")[-1].replace("_",".")
+
+    #         if targetURL != entry.path:
+    #             continue
+
+    #         resultList.update(call(file_path,target,processdict,importList_header,importList_detail))
+
     with ProcessPoolExecutor() as executor:
         futures = []
         for entry in os.scandir(directory_path):
@@ -264,16 +282,16 @@ def runParalell(directory_path,importList_header,importList_detail):
                 target = entry.path.split("\\")[-1].replace("_",".")
                 futures.append(executor.submit(call,file_path,target,processdict,importList_header,importList_detail))
 
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                resultList.update(future.result())                            
-            except Exception as e:
-                print(f"Error processing folder: {e}") 
+    for future in concurrent.futures.as_completed(futures):
+        try:
+            resultList.update(future.result())                            
+        except Exception as e:
+            print(f"Error processing folder: {e}") 
 
-        # for resultKey,resultValue in resultList:
-        #     for resultChKey,resultChValue in resultValue:
-        #         for resultChKey in resultList.keys:
-        #             resultList[resultChKey][2] = True
+    for resultKey,resultValue in resultList:
+        for resultChKey,resultChValue in resultValue:
+            for resultChKey in resultList.keys:
+                resultList[resultChKey][2] = True
 
     for resultKey,resultValue in resultList:
         if any(resultKey[0] == key[1] for key in resultList.keys()):
@@ -281,9 +299,7 @@ def runParalell(directory_path,importList_header,importList_detail):
         
     writeItem("./output.xlsx",resultList)
 
-    print("Excelファイル 'sample.xlsx' を作成しました！")
-
-    print("OK")
+    print("Excelファイル 'output.xlsx' を作成しました！")
 
 if __name__ == "__main__":
 
