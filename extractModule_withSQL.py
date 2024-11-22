@@ -40,10 +40,15 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
                     for line_number, line in enumerate(file, start=1):  # 行番号をカウント
 
                         # ファイルの中身に対してキーワードを検索
-                        for keyword in keywords:
-                            if keyword in line:
-                                # 一致した場合、結果に追加
-                                results.append([filename, dirpath, keyword, line.strip(), line_number])
+                        # for keyword in keywords:
+                        #     if keyword in line:
+                        #         # 一致した場合、結果に追加
+                        #         results.append([filename, dirpath, keyword, line.strip(), line_number])
+
+                        for match in re.finditer(regex_pattern, line.strip()):
+
+                            # 一致した場合、結果に追加
+                            results.append([filename, dirpath, match.group(2), line.strip(), line_number])
 
             except Exception as e:
                 print(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
