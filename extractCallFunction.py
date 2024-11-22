@@ -11,8 +11,8 @@ from openpyxl import Workbook
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
 
-baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
-#baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+#baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
+baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
 importList = []
 importList_header = []

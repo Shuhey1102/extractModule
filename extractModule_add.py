@@ -68,18 +68,14 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
                             class_pattern = "|".join(re.escape(item) for item in serchVal)
                             pattern = rf"(\w+)\s*=\s*new\s+({class_pattern})\s*\(.*?\);"
                             
-                            for match in re.finditer(pattern, line.strip()):
-                            
+                            for match in re.finditer(pattern, line.strip()):                        
                                 details.append([match.group(1),match.group(2)])
-                                havetoSerch = False
 
                         if not(line.strip().startswith("import")) and havetoSerch2:                        
                             class_pattern = "|".join(re.escape(item) for item in serchVal)
                             pattern =  rf"(?:private|public|protected|static)?\s*(?:final\s+)?({class_pattern})\s+(\w+);"
-                            for match in re.finditer(pattern, line.strip()):
-                            
+                            for match in re.finditer(pattern, line.strip()):                            
                                 details.append([match.group(1),match.group(2)])
-                                havetoSerch2 = False
 
 
             except Exception as e:
