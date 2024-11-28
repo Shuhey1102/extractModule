@@ -84,10 +84,11 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
     return results
 
 def write_results_to_csv(results, output_dir,cnt):
+    
     # 結果をCSVファイルに書き出し
     #os.makedirs(output_dir, exist_ok=True)
     output_file = os.path.join(output_dir, outputFilename)
-    with open(output_file, mode='a', newline='', encoding='utf-8') as file:
+    with open(output_file, mode='a', newline='', encoding='utf-8') as file:        
         writer = csv.writer(file)
         if int(cnt) == 0 :
             writer.writerow(['FileName', 'ParentPath', 'targetWord','line','Funcition','colNum','header/detail']) 
@@ -116,11 +117,16 @@ def main():
     with ProcessPoolExecutor(max_workers=5) as executor:
         futures = []
         # フォルダごとに検索処理を並行で実行
-        for dirpath, dirnames, _ in os.walk(root_dir):
-            # サブフォルダごとに処理を開始
-            for dirname in dirnames:
-                folder_path = os.path.join(dirpath, dirname)
-                futures.append(executor.submit(process_folder, dirname ,folder_path, keywords))
+        for entry in os.scandir(root_dir):
+            if entry.is_dir(): 
+                folder_path = entry.path
+                futures.append(executor.submit(process_folder, entry.name ,folder_path, keywords))                               
+       
+        # for dirpath, dirnames, _ in os.walk(root_dir):
+        #     # サブフォルダごとに処理を開始
+        #     for dirname in dirnames:
+        #         folder_path = os.path.join(dirpath, dirname)
+        #         futures.append(executor.submit(process_folder, dirname ,folder_path, keywords))
 
     cnt = 0
     for future in concurrent.futures.as_completed(futures):
@@ -130,8 +136,9 @@ def main():
             # 結果をフォルダごとのoutput.csvに書き出し
             if results:
                 #output_dir = os.path.join(folder_path, 'output')
-                output_dir = f"{crrDir}\\output\\"                                
-                write_results_to_csv(results, output_dir,cnt)
+                output_dir = f"{crrDir}\\output\\"
+
+                write_results_to_csv(results,output_dir,cnt)
 
             cnt+=1
 

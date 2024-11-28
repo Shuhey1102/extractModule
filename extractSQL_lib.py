@@ -1,7 +1,7 @@
-import datetime
 import os
 import re
-
+import csv
+import datetime
 
 #current datetime
 dt_now = datetime.datetime.now()
@@ -13,7 +13,6 @@ def getTimeString():
     Args:
     """        
     return dt_now.strftime('%Y%m%d%H%M%S')
-
 
 def search_files_in_directory(root_dir, pattern):
     # 正規表現パターンをコンパイル
@@ -33,27 +32,24 @@ def search_files_in_directory(root_dir, pattern):
                     file_content = file.read()
 
                 # ファイルの中身が正規表現に一致する場合
-                matches = regex.findall(file_content)
+                matches = regex.findall(file_content.replace("\n",""))
 
                 # 一致があれば結果に追加
                 for match in matches:
-                    name_values = re.findall(r'name="([^"]+)"', match)                    
-                    results.append(name_values[0])
-                    
+                    results.append([filename, dirpath, match,match[0],match[2]])
 
             except Exception as e:
                 print(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
     
     return results
 
-
-def runExtractSQL(_filepath,_pattern):
+def runExtractSQL(_filepath):
     # 対象のフォルダパスと正規表現パターンを指定
     #root_dir = input("検索対象のフォルダのパスを入力してください: ")
     #pattern = input("検索する正規表現を入力してください: ")
     
     root_dir = _filepath
-    pattern = _pattern
+    pattern = r"<component name=\"(.*?)\"(.*?)>(.*?)</component>"
     #output_file = f"{crrDir}\\output\\extractSQL_{getTimeString()}.csv"
 
     # ファイルを検索して結果を取得

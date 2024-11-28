@@ -10,8 +10,8 @@ import concurrent
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
 
-#baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
-baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
+#baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
 class FunctionInfo:
     def __init__(self,function_Name, function_className ,function_signature, start_line, end_line):
@@ -32,7 +32,11 @@ class FunctionInfo:
 
 class JavaFileAnalyzer:
     class_pattern = re.compile(r'\b(public\s+)?(final\s+)?(class|interface)\s+\w+')
-    method_pattern = re.compile(r'\b(public|protected|private|static|final|\s)\s+(static|final|\s)?\s*\w+\s+\w+\s*\(.*\)\s*\{')
+    method_partial_pattern = re.compile(r'\b(public|protected|private|static|final|\s)\s+(static|final|\s)?\s*(\w+(\[\])?|\w+<\w+(\s*,\s*\w+)*>)\s+\w+\s*\(.*')
+    method_pattern = re.compile(r'\b(public|protected|private|static|final|\s)\s+(static|final|\s)?\s*(\w+(\[\])?|\w+<\w+(\s*,\s*\w+)*>)\s+\w+\s*\(.*\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{')
+    sb_append_pattern = re.compile(r'sb\.append\s*\(.*?[{}].*?\)')
+    comment_pattern = re.compile(r'^\s*//')
+
 
     def __init__(self):
         self.functions = []
@@ -41,39 +45,78 @@ class JavaFileAnalyzer:
         stack = []
         dummy_stack = []
         in_class_scope = False
+        in_comment_scope = False
+        checkMethod = False
+        tmpline_number = 0
+        tmpFunction_signature = ""
 
         with open(file_path, 'r', encoding='utf-8') as file:
+
             for line_number, line in enumerate(file, 1):
+
                 # Class or Interface Detection
-                if self.class_pattern.search(line):
+                if not (in_class_scope) and self.class_pattern.search(line):
                     in_class_scope = True
-                    className = line.strip().split('{')[0].strip()                    
+                    className = line.strip().split('{')[0].strip()
+                    continue                    
 
-                # Function Detection using `{` split to get function signature
-                if in_class_scope and self.method_pattern.search(line):
-                    function_signature = line.strip().split('{')[0].strip()
-                    function_obj = FunctionInfo(file.name,className,function_signature, line_number, None)
-                    stack.append(function_obj)
+                if not(in_comment_scope) and line.strip().startswith("/*") and not(line.strip().endswith("*/")):
+                    in_comment_scope = True
 
+                if in_comment_scope and line.strip().endswith("*/"):
+                    in_comment_scope = False
 
-                # Count opening braces `{` in the line
-                opening_braces = line.count('{')
-                for _ in range(opening_braces):
-                    if in_class_scope and self.method_pattern.search(line):
-                        continue  # メソッドの `{` はすでに処理済み
-                    dummy_stack.append('{')
+                if not(in_comment_scope):
+                    # Skip Comment
+                    if self.comment_pattern.search(line):
+                        continue
 
-                # Count closing braces `}` in the line
-                closing_braces = line.count('}')
-                for _ in range(closing_braces):
-                    if dummy_stack:
-                        dummy_stack.pop()
-                    elif stack:
-                        function_obj = stack.pop()
-                        function_obj.end_line = line_number
-                        self.functions.append(function_obj)
-                    else:
-                        in_class_scope = False  # クラススコープ終了
+                    # skip if "{}" is included in sb.append
+                    if self.sb_append_pattern.search(line):
+                        continue
+
+                    # Function Detection using `{` split to get function signature
+                    if in_class_scope and self.method_pattern.search(line) and not(checkMethod):
+                        function_signature = line.strip().split('{')[0].strip()
+                        function_obj = FunctionInfo(file.name,className,function_signature, line_number, None)
+                        stack.append(function_obj)
+                    elif in_class_scope and self.method_partial_pattern.search(line)  and not(checkMethod):
+                        checkMethod=True
+                        tmpFunction_signature = line.strip()
+                        tmpline_number = line_number
+                        continue
+
+                    if checkMethod:
+                        if line.strip().endswith("{"):                        
+                            function_signature = tmpFunction_signature + line.strip().split('{')[0].strip()
+                            function_obj = FunctionInfo(file.name,className,function_signature, tmpline_number, None)
+                            stack.append(function_obj)
+                            checkMethod=False
+                            continue
+                        elif line.strip().endswith(";"):
+                            checkMethod=False
+                            continue
+                        else:
+                            tmpFunction_signature += line.strip()                        
+                    
+                    # Count opening braces `{` in the line                    
+                    opening_braces = line.count('{')
+                    for _ in range(opening_braces):
+                        if in_class_scope and  self.method_pattern.search(line):
+                            continue  # メソッドの `{` はすでに処理済み
+                        dummy_stack.append('{')
+
+                    # Count closing braces `}` in the line
+                    closing_braces = line.count('}')
+                    for _ in range(closing_braces):
+                        if dummy_stack:
+                            dummy_stack.pop()
+                        elif stack:
+                            function_obj = stack.pop()
+                            function_obj.end_line = line_number
+                            self.functions.append(function_obj)
+                        else:
+                            in_class_scope = False  # クラススコープ終了
 
     def get_functions(self):
         return self.functions

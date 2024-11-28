@@ -6,13 +6,15 @@ import shutil
 from concurrent.futures import ProcessPoolExecutor
 import concurrent
 from openpyxl import Workbook
+from openpyxl.styles import Font
+from openpyxl.utils import get_column_letter
 
 #current datetime
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
 
-#baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
-baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
+#baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
 importList = []
 importList_header = []
@@ -128,10 +130,11 @@ def call(file_path,target,processdict,importList_header,importList_detail):
         if tmpFileName == callFunc["fileName"]:
             continue
         else:
-            tmpFileName = callFunc["fileName"]
-            
+            tmpFileName = callFunc["fileName"]    
+
         colNum=5
         filtered_data_header = [item for item in importList_header if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item["FileName"])]        
+
         for data_header in filtered_data_header:
             
             if data_header["line"].startswith("//") or data_header["line"].startswith("/*"):
@@ -142,31 +145,36 @@ def call(file_path,target,processdict,importList_header,importList_detail):
             function_pattern = "|".join(map(re.escape, [item["function"] for item in tmpFunctionList]))
             #regex = re.compile(rf"\b(\w+)\.({function_pattern})\s*\(")      
 
-            
+
             filtered_data_detail = [item for item in importList_detail 
                                         if item["FileName"]==data_header["FileName"] and item["ParentPath"]==data_header["ParentPath"] and item["Funcition"]==data_header["Funcition"]
-                                        and (not(item["line"].startswith("//")) or not(item["line"].startswith("/*")))]     
-            
-
+                                        and not(item["line"].strip().startswith("//")) and not(item["line"].strip().startswith("/*"))]     
 
             for data_detail in filtered_data_detail:
                 matches = extract_nested_functions(data_detail["line"],function_pattern)            
-                callee_function_name = ""
-                callee_instance_name =  "" 
-                callee_class_name = ""
-                caller_function_name = ""
                 
                 if len(matches) > 0 and len(tmpFunctionList) > 0:
                     
                     for match in matches:
+        
+                        callee_function_name = ""
+                        callee_instance_name =  "" 
+                        callee_class_name = ""
+                        caller_function_name = ""
+        
                         callee_instance_name, callee_function_name = (match[0],match[1])
-                        callee_class_name = data_detail["Funcition"]
-
+                        callee_class_name = data_detail["Funcition"]        
+        
                         #Check Caller Func
                         for callerFunction in  [item for item in targetProcess if item["fileName"] == callFunc["fileName"]and item["fileNameFull"]==callFunc["fileNameFull"]] :                   
                             if int(callerFunction["startNum"]) <= int(data_detail["colNum"]) <= int(callerFunction["endNum"]):
                                 caller_function_name = callerFunction["function"]
                                 break
+                        
+                        #Debug用
+                        if caller_function_name == "":
+                            continue
+                        #     print()
 
                         parentKey = caller_function_name + "_" + callFunc["fileNameFull"]
                         childKey = callee_function_name + "_" + [item["fileNameFull"] for item in tmpFunctionList if item["function"] == callee_function_name][0]
@@ -177,10 +185,11 @@ def call(file_path,target,processdict,importList_header,importList_detail):
                         retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc["fileName"], callee_function_name+"_"+ callee_class_name,False] #0:caller / 1:callee
                         print(parentKey+","+childKey+","+caller_function_name+"_"+ callFunc["fileName"]+","+callee_function_name+"_"+ callee_class_name)
                 else:
-                    parentKey = callFunc["function"] + "_" + callFunc["fileNameFull"]
-                    childKey = "None"
-                    #retDist[(parentKey,childKey)] = None
-                    print(parentKey+",'',"+ callFunc["function"]+"_"+ callFunc["fileName"]+",''")
+                    continue
+                    # parentKey = callFunc["function"] + "_" + callFunc["fileNameFull"]
+                    # childKey = "None"
+                    # #retDist[(parentKey,childKey)] = None
+                    # print(parentKey+",'',"+ callFunc["function"]+"_"+ callFunc["fileName"]+",''")
     return retDist
 
 def writeItem(outputFile,resultList):
@@ -200,9 +209,11 @@ def writeItem(outputFile,resultList):
     calCol=1
 
     for i in range(15):
+        target_column_letter = get_column_letter(calCol)  # 数字をアルファベットに変換
+        ws.column_dimensions[target_column_letter].width = 50
         ws.cell(row=calRow, column=calCol, value=f"区分{calCol}")
         calCol+=1
-    
+
     for outputKey,outputValue in ((key, value) for key, value in resultList.items() if not value[2]):
 
         calRow+=1
@@ -214,6 +225,11 @@ def writeItem(outputFile,resultList):
 
         calRow = writeItemRecusively(ws,calRow,calCol,outputKey,resultList)
 
+    # 全体のフォントを Meiryo に設定
+    meiryo_font = Font(name="Meiryo")
+    for row in ws.iter_rows():
+        for cell in row:
+            cell.font = meiryo_font
 
     # ファイルに保存
     wb.save(f"{outputFile}")
@@ -227,11 +243,10 @@ def writeItemRecusively(ws,calRow,calCol,outputKey,resultList):
             return(tmpCalRow)
         else:
             tmpCalCol=calCol + 1
-            for key,value in filteredDict:
-                ws.cell(row=calRow, column=tmpCalCol, value=f"{value[1]}")
-                ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key,resultList)
-                tmpCalRow=ret+1
-                
+            for key,value in filteredDict.items():
+                ws.cell(row=tmpCalRow, column=tmpCalCol, value=f"{value[1]}")
+                ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key,resultList)            
+                tmpCalRow=ret+1                
                 
         return(tmpCalRow)
 
@@ -256,12 +271,6 @@ def runParalell(directory_path,importList_header,importList_detail):
             except Exception as e:
                 print(f"Error processing folder: {e}") 
 
-    # for entry in os.scandir(directory_path):
-    #     if entry.is_dir(): 
-    #         file_path = entry.path+"\\output.csv"
-    #         target = entry.path.split("\\")[-1].replace("_",".")
-    #         call(file_path,target,processdict,importList_header,importList_detail)
-
 
     resultList = {}
 
@@ -272,8 +281,8 @@ def runParalell(directory_path,importList_header,importList_detail):
     #         file_path = entry.path+"\\output.csv"
     #         target = entry.path.split("\\")[-1].replace("_",".")
 
-    #         if targetURL != entry.path:
-    #             continue
+    #         # if targetURL != entry.path:
+    #         #     continue
 
     #         resultList.update(call(file_path,target,processdict,importList_header,importList_detail))
 

@@ -79,7 +79,7 @@ def main():
     sql_dir = input("SQLの抽出フォルダ: ")
 
     # キーワードリストを直接指定
-    keywords = extractSQL_lib.runExtractSQL(sql_dir,"<component name=\".*\"")
+    keywords = extractSQL_lib.runExtractSQL(sql_dir)
 
     # while(True):
     #     isEnd = input("他に追加すべき検索キーワードがありますか？(y:n): ")

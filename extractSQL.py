@@ -32,12 +32,11 @@ def search_files_in_directory(root_dir, pattern):
                     file_content = file.read()
 
                 # ファイルの中身が正規表現に一致する場合
-                matches = regex.findall(file_content)
+                matches = regex.findall(file_content.replace("\n",""))
 
                 # 一致があれば結果に追加
                 for match in matches:
-                    name_values = re.findall(r'name="([^"]+)"', match)
-                    results.append([filename, dirpath, match,name_values[0]])
+                    results.append([filename, dirpath, match,match[0],match[2]])
 
             except Exception as e:
                 print(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
@@ -48,7 +47,7 @@ def write_to_csv(results, output_file):
     # 結果をCSVファイルに書き出し
     with open(output_file, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        writer.writerow(['ファイル名', '親ディレクトリのパス', '一致したワード','NAME'])  # ヘッダー
+        writer.writerow(['ファイル名', '親ディレクトリのパス', '一致したワード','NAME','SQL'])  # ヘッダー
         writer.writerows(results)
 
 def main():
@@ -57,7 +56,7 @@ def main():
     #pattern = input("検索する正規表現を入力してください: ")
     
     root_dir = input("検索対象のフォルダのパスを入力してください: ")
-    pattern = "<component name=\".*\""
+    pattern = r"<component name=\"(.*?)\"(.*?)>(.*?)</component>"
 
     output_file = f"{crrDir}\\output\\extractSQL_{getTimeString()}.csv"
 
