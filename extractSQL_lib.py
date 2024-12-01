@@ -1,7 +1,7 @@
+import datetime
 import os
 import re
-import csv
-import datetime
+
 
 #current datetime
 dt_now = datetime.datetime.now()
@@ -13,6 +13,7 @@ def getTimeString():
     Args:
     """        
     return dt_now.strftime('%Y%m%d%H%M%S')
+
 
 def search_files_in_directory(root_dir, pattern):
     # 正規表現パターンをコンパイル
@@ -43,13 +44,14 @@ def search_files_in_directory(root_dir, pattern):
     
     return results
 
-def runExtractSQL(_filepath):
+
+def runExtractSQL(_filepath,_pattern):
     # 対象のフォルダパスと正規表現パターンを指定
     #root_dir = input("検索対象のフォルダのパスを入力してください: ")
     #pattern = input("検索する正規表現を入力してください: ")
     
     root_dir = _filepath
-    pattern = r"<component name=\"(.*?)\"(.*?)>(.*?)</component>"
+    pattern = _pattern
     #output_file = f"{crrDir}\\output\\extractSQL_{getTimeString()}.csv"
 
     # ファイルを検索して結果を取得

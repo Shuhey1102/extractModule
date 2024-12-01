@@ -139,7 +139,8 @@ def main():
                 output_dir = f"{crrDir}\\output\\"
 
                 write_results_to_csv(results,output_dir,cnt)
-
+            else:
+                continue
             cnt+=1
 
         except Exception as e:

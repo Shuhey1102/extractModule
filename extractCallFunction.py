@@ -20,6 +20,10 @@ importList = []
 importList_header = []
 importList_detail = []
 
+SQLID_COL = 17
+SQL_COL = 18
+
+
 def load_csv_to_objects(file_path):
     objects = []
     
@@ -117,7 +121,7 @@ def extract_nested_functions(line,function_pattern):
     
     return results
 
-def call(file_path,target,processdict,importList_header,importList_detail):
+def call(file_path,target,processdict,importList_header,importList_detail,importList_SQL):
 
     #callFunctions = load_csv_to_objects(file_path)
 
@@ -126,12 +130,36 @@ def call(file_path,target,processdict,importList_header,importList_detail):
     tmpFileName = ""
     targetProcess = processdict[target]
     for callFunc in targetProcess:
-        
+              
         if tmpFileName == callFunc["fileName"]:
             continue
         else:
             tmpFileName = callFunc["fileName"]    
 
+        #Function-SQL
+        filtered_SQL = [item for item in importList_SQL if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item["FileName"])]        
+
+        for data_SQL in filtered_SQL:
+            #Check Caller Func
+            for callerFunction in  [item for item in targetProcess if item["fileName"] == callFunc["fileName"]and item["fileNameFull"]==callFunc["fileNameFull"]] :                   
+                if int(callerFunction["startNum"]) <= int(data_SQL["colNum"]) <= int(callerFunction["endNum"]):
+                    caller_function_name = callerFunction["function"]
+                    break
+            
+            #Debug用
+            if caller_function_name == "":
+                continue
+            #     print()
+
+            parentKey = caller_function_name + "_" + callFunc["fileNameFull"]
+            childKey = data_SQL["Funcition"] + "_" + "SQL"
+            
+            if (parentKey,childKey) in retDist :
+                continue
+            
+            retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc["fileName"], data_SQL["Funcition"],True]             
+
+        #Function-Function
         colNum=5
         filtered_data_header = [item for item in importList_header if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item["FileName"])]        
 
@@ -182,7 +210,7 @@ def call(file_path,target,processdict,importList_header,importList_detail):
                         if (parentKey,childKey) in retDist :
                             continue
                         
-                        retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc["fileName"], callee_function_name+"_"+ callee_class_name,False] #0:caller / 1:callee
+                        retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc["fileName"], callee_function_name+"_"+ callee_class_name,False] #0:Function / 1:SQL
                         print(parentKey+","+childKey+","+caller_function_name+"_"+ callFunc["fileName"]+","+callee_function_name+"_"+ callee_class_name)
                 else:
                     continue
@@ -192,7 +220,7 @@ def call(file_path,target,processdict,importList_header,importList_detail):
                     # print(parentKey+",'',"+ callFunc["function"]+"_"+ callFunc["fileName"]+",''")
     return retDist
 
-def writeItem(outputFile,resultList):
+def writeItem(outputFile,processList,resultList,importList_SQL):
 
     #Excel出力
 
@@ -207,23 +235,40 @@ def writeItem(outputFile,resultList):
     
     calRow=1
     calCol=1
+    
+    ws.cell(row=calRow, column=calCol, value=f"対象ファイル")
+    target_column_letter = get_column_letter(calCol)  # 数字をアルファベットに変換
+    ws.column_dimensions[target_column_letter].width = 25
+    calCol+=1
 
     for i in range(15):
-        target_column_letter = get_column_letter(calCol)  # 数字をアルファベットに変換
+        target_column_letter = get_column_letter(calCol)  
         ws.column_dimensions[target_column_letter].width = 50
-        ws.cell(row=calRow, column=calCol, value=f"区分{calCol}")
+        ws.cell(row=calRow, column=calCol, value=f"区分{calCol-1}")
         calCol+=1
 
-    for outputKey,outputValue in ((key, value) for key, value in resultList.items() if not value[2]):
+    #dicon/SQL
+    ws.column_dimensions[get_column_letter(SQLID_COL)].width = 50
+    ws.column_dimensions[get_column_letter(SQL_COL)].width = 50
+    ws.cell(row=calRow, column=SQLID_COL, value=f"SQLID")
+    ws.cell(row=calRow, column=SQL_COL, value=f"SQL")
+
+    tmpClass = ""
+    for process in processList:
 
         calRow+=1
-        calCol=1     
-        
-        ws.cell(row=calRow, column=calCol, value=f"{outputValue[0]}")
-        calCol+=1
-        ws.cell(row=calRow, column=calCol, value=f"{outputValue[1]}")
+        calCol=1
 
-        calRow = writeItemRecusively(ws,calRow,calCol,outputKey,resultList)
+        if tmpClass != process[2]:
+            ws.cell(row=calRow, column=calCol, value=f"{process[2]}")
+            tmpClass = process[2]    
+
+        calCol+=1        
+        ws.cell(row=calRow, column=calCol, value=f"{process[0]}")
+
+
+        calRow = writeItemRecusively(ws,calRow,calCol,process,resultList,importList_SQL)
+
 
     # 全体のフォントを Meiryo に設定
     meiryo_font = Font(name="Meiryo")
@@ -234,24 +279,32 @@ def writeItem(outputFile,resultList):
     # ファイルに保存
     wb.save(f"{outputFile}")
 
-def writeItemRecusively(ws,calRow,calCol,outputKey,resultList):
+def writeItemRecusively(ws,calRow,calCol,process,resultList,importList_SQL):
 
-        filteredDict = {tkey:tvalue for tkey,tvalue in resultList.items() if tkey[0] == outputKey[1]}
+        filteredDict = {tkey:tvalue for tkey,tvalue in resultList.items() if tkey[0] == process[1]}
         tmpCalRow=calRow
-            
+        cnt = 0
+
         if len(filteredDict)==0:
             return(tmpCalRow)
         else:
             tmpCalCol=calCol + 1
             for key,value in filteredDict.items():
+                cnt+=1
                 ws.cell(row=tmpCalRow, column=tmpCalCol, value=f"{value[1]}")
-                ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key,resultList)            
-                tmpCalRow=ret+1                
+                if value[2] == True:
+                    #dicon/SQL
+                    ws.cell(row=calRow, column=SQLID_COL, value=value[1])
+                    ws.cell(row=calRow, column=SQL_COL, value=[item["SQL"] for item in importList_SQL if item["Funcition"] == value[1]][0])
+
+                ret = writeItemRecusively(ws,calRow,tmpCalCol,key,resultList,importList_SQL)            
+                if cnt <= len(filteredDict):
+                    tmpCalRow=ret+1                
                 
         return(tmpCalRow)
 
 
-def runParalell(directory_path,importList_header,importList_detail):
+def runParalell(directory_path,importList_header,importList_detail,importList_SQL):
 
     #runParalell
 
@@ -292,28 +345,35 @@ def runParalell(directory_path,importList_header,importList_detail):
             if entry.is_dir(): 
                 file_path = entry.path+"\\output.csv"
                 target = entry.path.split("\\")[-1].replace("_",".")
-                futures.append(executor.submit(call,file_path,target,processdict,importList_header,importList_detail))
+                futures.append(executor.submit(call,file_path,target,processdict,importList_header,importList_detail,importList_SQL))
 
     for future in concurrent.futures.as_completed(futures):
         try:
             resultList.update(future.result())                            
         except Exception as e:
             print(f"Error processing folder: {e}") 
+    
+
 
     # for resultKey,resultValue in resultList.items():
     #     if any(resultKey[0] == key[1] for key in resultList.keys()):
     #         resultList[resultKey][2] = True
     
     output_file = crrDir +  "\\output_TMP.csv"
-    with open(output_file, mode='a', newline='', encoding='utf-8') as file:
+    processList = []
+    with open(output_file, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
+        writer.writerow(["callerFull","calleeFull","caller","callee","isSQL"])
+
         for resultKey,resultValue in resultList.items():
-            if any(resultKey[0] == key[1] for key in resultList.keys()):
-                resultList[resultKey][2] = True
+            if not(any(resultKey[0] == key[1]  for key in resultList.keys())) and not(resultValue[2]):
+                if not(any(resultKey[0] == process[0]  for process in processList)):
+                    processList.append([resultValue[0],resultKey[0],resultKey[0].split("\\")[-1]])                    
             writer.writerow([resultKey[0],resultKey[1],resultValue[0],resultValue[1],resultValue[2]])
+            #resultList[resultKey][2] = True                               
         
 
-    writeItem("./output.xlsx",resultList)
+    writeItem("./output.xlsx",processList,resultList,importList_SQL)
 
     print("Excelファイル 'output.xlsx' を作成しました！")
 
@@ -328,8 +388,11 @@ if __name__ == "__main__":
     importList = load_csv_to_objects(input("セットする対象ファイルパス:"))
     importList_header = [importItem for importItem in importList[1] if importItem["header/detail"] == "h" ]
     importList_detail = [importItem for importItem in importList[1] if importItem["header/detail"] == "d" ]    
+    importList_TMPSQL = load_csv_to_objects(input("セットする対象ファイルパス(SQL):"))
+    importList_SQL = [importItem for importItem in importList_TMPSQL[1]]
     importList[1].clear()
+    importList_TMPSQL[1].clear()
 
     #run('N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\jp\\co\\komatsu\\emdw\\business\\service\\impl',"N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\")
-    runParalell(input("プロセスフォルダ:"),importList_header,importList_detail)
+    runParalell(input("プロセスフォルダ:"),importList_header,importList_detail,importList_SQL)
     #runParalell("N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\jp\\co\\komatsu\\emdw\\")

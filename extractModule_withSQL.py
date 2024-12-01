@@ -4,6 +4,7 @@ from concurrent.futures import ProcessPoolExecutor
 import extractSQL_lib
 import datetime
 import re
+import concurrent
 
 #current datetime
 dt_now = datetime.datetime.now()
@@ -26,7 +27,7 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
  
     # 正規表現の作成
     dao_pattern = "|".join(re.escape(func) for func in daoFunction)
-    sql_pattern = "|".join(re.escape(sql) for sql in keywords)
+    sql_pattern = "|".join(re.escape(sql[3]) for sql in keywords)
     regex_pattern = rf"({dao_pattern})\(\"({sql_pattern})\".*?\);"
 
     # フォルダ内の全てのファイルを走査
@@ -45,41 +46,38 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
                         #         # 一致した場合、結果に追加
                         #         results.append([filename, dirpath, keyword, line.strip(), line_number])
 
-                        for match in re.finditer(regex_pattern, line.strip()):
+                        for match in re.finditer(regex_pattern, line.strip()):                            
+                            
+                            sqlStatement = [item[4] for item in keywords if item[3] == match.group(2)][0]
 
                             # 一致した場合、結果に追加
-                            results.append([filename, dirpath, match.group(2), line.strip(), line_number])
+                            results.append([filename, dirpath, match.group(2), line.strip(),match.group(2), line_number,sqlStatement])
 
             except Exception as e:
                 print(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
 
     return results
 
-def write_results_to_csv(results, output_dir):
+def write_results_to_csv(results, output_dir,cnt):
     # 結果をCSVファイルに書き出し
     #os.makedirs(output_dir, exist_ok=True)
     output_file = os.path.join(output_dir, outputFilename)
     with open(output_file, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        writer.writerow(['FileName', 'ParentPath', 'targetWord','line','colNum']) 
+        if int(cnt) == 0 :
+            writer.writerow(['FileName', 'ParentPath', 'targetWord','line','Funcition','colNum','SQL']) 
         writer.writerows(results)
 
 def process_folder(dirname ,folder_path, keywords):
     # フォルダ内のファイルを検索して結果を取得
-    results = search_files_for_keywords_in_folder(folder_path, keywords)
-
-    # 結果をフォルダごとのoutput.csvに書き出し
-    if results:
-        #output_dir = os.path.join(folder_path, 'output')
-        output_dir = f"{crrDir}\\output\\"
-        write_results_to_csv(results, output_dir)
+    return search_files_for_keywords_in_folder(folder_path, keywords)
 
 def main():
     # 検索対象のフォルダパスを指定
     sql_dir = input("SQLの抽出フォルダ: ")
 
     # キーワードリストを直接指定
-    keywords = extractSQL_lib.runExtractSQL(sql_dir)
+    keywords = extractSQL_lib.runExtractSQL(sql_dir,r"<component name=\"(.*?)\"(.*?)>(.*?)</component>")
 
     # while(True):
     #     isEnd = input("他に追加すべき検索キーワードがありますか？(y:n): ")
@@ -94,15 +92,34 @@ def main():
 
     # サブフォルダごとに並行で検索処理を実行
     with ProcessPoolExecutor() as executor:
+        futures = []
         # フォルダごとに検索処理を並行で実行
-        for dirpath, dirnames, _ in os.walk(root_dir):
-            # サブフォルダごとに処理を開始
-            for dirname in dirnames:
-                folder_path = os.path.join(dirpath, dirname)
-                executor.submit(process_folder, dirname ,folder_path, keywords)
+        for entry in os.scandir(root_dir):
+            if entry.is_dir(): 
+                folder_path = entry.path
+                futures.append(executor.submit(process_folder, entry.name ,folder_path, keywords))                               
+
+    
+    cnt = 0
+    for future in concurrent.futures.as_completed(futures):
+        try:
+            results = future.result()
+
+            # 結果をフォルダごとのoutput.csvに書き出し
+            if results:
+                #output_dir = os.path.join(folder_path, 'output')
+                output_dir = f"{crrDir}\\output\\"
+                write_results_to_csv(results,output_dir,cnt)
+            else:
+                continue
+            cnt+=1
+
+        except Exception as e:
+            print(f"Error processing folder: {e}")
+            SystemExit(1)
 
     print("すべての検索結果がフォルダごとにoutput.csvに保存されました")
     return outputFilename
 
 if __name__ == '__main__':
-    SystemExit(main())
+    main()
