@@ -13,8 +13,8 @@ from openpyxl.utils import get_column_letter
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
 
-baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
-#baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+#baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
+baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
 importList = []
 importList_header = []
@@ -134,12 +134,16 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
         if tmpFileName == callFunc["fileName"]:
             continue
         else:
-            tmpFileName = callFunc["fileName"]    
+            tmpFileName = callFunc["fileName"] 
+
+        if tmpFileName == "TEMAM17DaoImpl":
+            print()
 
         #Function-SQL
         filtered_SQL = [item for item in importList_SQL if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item["FileName"])]        
 
         for data_SQL in filtered_SQL:
+            caller_function_name = ""
             #Check Caller Func
             for callerFunction in  [item for item in targetProcess if item["fileName"] == callFunc["fileName"]and item["fileNameFull"]==callFunc["fileNameFull"]] :                   
                 if int(callerFunction["startNum"]) <= int(data_SQL["colNum"]) <= int(callerFunction["endNum"]):
@@ -191,7 +195,7 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                         caller_function_name = ""
         
                         callee_instance_name, callee_function_name = (match[0],match[1])
-                        callee_class_name = data_detail["Funcition"]        
+                        callee_class_name = [item["fileName"] for item in tmpFunctionList if item["function"] == callee_function_name][0]        
         
                         #Check Caller Func
                         for callerFunction in  [item for item in targetProcess if item["fileName"] == callFunc["fileName"]and item["fileNameFull"]==callFunc["fileNameFull"]] :                   
