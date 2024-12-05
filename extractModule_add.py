@@ -25,12 +25,12 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
     results = []
         
     # フォルダ内の全てのファイルを走査
-    for dirpath, _, filenames in os.walk(folder_path):
-        for filename in filenames:
-            file_path = os.path.join(dirpath, filename)
-            pattern = ""
+    try:
+        for dirpath, _, filenames in os.walk(folder_path):
+            for filename in filenames:
+                file_path = os.path.join(dirpath, filename)
+                pattern = ""
             
-            try:
                 # ファイルを行ごとに読み込む             
                 with open(file_path, 'r', encoding='utf-8') as file:
                     serchVal = []
@@ -39,6 +39,9 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
                     havetoSerch2 = False
                     
                     for line_number, line in enumerate(file, start=1):  # 行番号をカウント
+
+                        # if file_path == "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\jp\\co\\komatsu\\emdw\\business\\service\\impl\\TEMAB02ServiceImpl.java":
+                        #     print()
 
                         # ファイルの中身に対してキーワードを検索
                         for keyword in keywords:
@@ -71,15 +74,22 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
                             for match in re.finditer(pattern, line.strip()):                        
                                 details.append([match.group(1),match.group(2)])
 
+                        # if not(line.strip().startswith("import")) and havetoSerch2:                        
+                        #     class_pattern = "|".join(re.escape(item) for item in serchVal)
+                        #     pattern =  rf"(?:private|public|protected|static)?\s*(?:final\s+)?({class_pattern})\s+(\w+);"
+                        #     for match in re.finditer(pattern, line.strip()):                            
+                        #         details.append([match.group(1),match.group(2)])
+
                         if not(line.strip().startswith("import")) and havetoSerch2:                        
                             class_pattern = "|".join(re.escape(item) for item in serchVal)
-                            pattern =  rf"(?:private|public|protected|static)?\s*(?:final\s+)?({class_pattern})\s+(\w+);"
+                            pattern =  rf"({class_pattern})\s+(\w+);"
                             for match in re.finditer(pattern, line.strip()):                            
                                 details.append([match.group(1),match.group(2)])
 
 
-            except Exception as e:
-                raise Exception(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
+
+    except Exception as e:
+        raise Exception(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
 
     return results
 
@@ -92,7 +102,7 @@ def write_results_to_csv(results, output_dir,cnt):
         writer = csv.writer(file)
         if int(cnt) == 0 :
             writer.writerow(['FileName', 'ParentPath', 'targetWord','line','Funcition','colNum','header/detail']) 
-        writer.writerows(results)    
+        writer.writerows(results)
 
 def process_folder(dirname ,folder_path, keywords):
     # フォルダ内のファイルを検索して結果を取得
@@ -113,6 +123,7 @@ def main():
 
     root_dir = input("検索対象のフォルダ: ")
 
+    
     # サブフォルダごとに並行で検索処理を実行
     with ProcessPoolExecutor(max_workers=5) as executor:
         futures = []
@@ -121,7 +132,7 @@ def main():
             if entry.is_dir(): 
                 folder_path = entry.path
                 futures.append(executor.submit(process_folder, entry.name ,folder_path, keywords))                               
-       
+                
         # for dirpath, dirnames, _ in os.walk(root_dir):
         #     # サブフォルダごとに処理を開始
         #     for dirname in dirnames:
