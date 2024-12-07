@@ -10,8 +10,8 @@ import concurrent
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
 
-baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
-#baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+#baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
+baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
 class FunctionInfo:
     def __init__(self,function_Name, function_className ,function_signature, start_line, end_line):
@@ -32,8 +32,8 @@ class FunctionInfo:
 
 class JavaFileAnalyzer:
     class_pattern = re.compile(r'\b(public\s+)?(final\s+)?(class|interface)\s+\w+')
-    method_partial_pattern = re.compile(r'\b(public|protected|private|static|final|\s)\s+(static|final|\s)?\s*(\w+(\[\])?|\w+<\w+(\s*,\s*\w+)*>)\s+\w+\s*\(.*')
-    method_pattern = re.compile(r'\b(public|protected|private|static|final|\s)\s+(static|final|\s)?\s*(\w+(\[\])?|\w+<\w+(\s*,\s*\w+)*>)\s+\w+\s*\(.*\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{')
+    method_partial_pattern = re.compile(r'\b(public|protected|private|static|final|\s)\s+(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*')
+    method_pattern = re.compile(r'\b(public|protected|private|static|final|\s)\s+(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{')
     sb_append_pattern = re.compile(r'sb\.append\s*\(.*?[{}].*?\)')
     comment_pattern = re.compile(r'^\s*//')
 
@@ -53,7 +53,7 @@ class JavaFileAnalyzer:
         with open(file_path, 'r', encoding='utf-8') as file:
 
             for line_number, line in enumerate(file, 1):
-
+               
                 # Class or Interface Detection
                 if not (in_class_scope) and self.class_pattern.search(line):
                     in_class_scope = True
