@@ -13,9 +13,6 @@ from openpyxl.utils import get_column_letter
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
 
-#baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
-baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
-
 importList = []
 importList_header = []
 importList_detail = []
@@ -46,33 +43,22 @@ def load_csv_to_objects(file_path):
     
     return (file_path,objects)
 
-# def load_csv_to_objects_custom(file_path,baseURL):
-#     objects = []
- 
-#     # CSVファイルを一括ロード
-#     with open(file_path, mode='r', encoding='utf-8') as file:
-#         reader = csv.DictReader(file)  # ヘッダーをキーとした辞書形式で各行を取得
-        
-#         # 各行を辞書形式でリストに格納
-#         for row in reader:
-#             obj = {}
-#             for header, value in row.items():
-#                 keys = header.split('.')  # 'object.item1' のようなドット区切りのキーを分割
-#                 current_obj = obj
-#                 for key in keys[:-1]:  # ネストされた辞書を作成
-#                     if key not in current_obj:
-#                         current_obj[key] = {}
-#                     current_obj = current_obj[key]
 
-#                 #if header == "fileNameFull":
-#                 #    value = value.replace(baseURL,"").replace("\\",".").replace(".java","")
+def extract_self_functions(line,function_pattern):
+    """
+    階層的な関数呼び出しから、クラス名と関数名をすべて抽出する。
 
-#                 current_obj[keys[-1]] = value  # 最後の要素に値を割り当て
-#             objects.append(obj)
-    
-#     return (file_path,objects)
+    Args:
+        line (str): 関数呼び出しの文字列。
 
+    Returns:
+        list: 抽出された (クラス名, 関数名) のタプルのリスト。
+    """
+    # 正規表現: クラス名.関数名(任意の引数)
+    regex = re.compile(rf"({function_pattern})\s*\(")
+    matches = regex.findall(line)
 
+    return matches
 
 def extract_functions(line,function_pattern):
     """
@@ -123,6 +109,7 @@ def extract_nested_functions(line,function_pattern):
 
 def call(file_path,target,processdict,importList_header,importList_detail,importList_SQL):
 
+    print(f"Start call : {file_path}") 
     #callFunctions = load_csv_to_objects(file_path)
 
     retDist = {}
@@ -135,16 +122,13 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
         else:
             tmpFileName = callFunc["fileName"] 
         
-        if tmpFileName == "EMDW0403Action":
-            print()
-        else:
-            continue
-
-        if tmpFileName == "TEMAM17DaoImpl":
-            print()
+        # if tmpFileName == "EMDW0403Action":
+        #     print()
+        # else:
+        #     continue
 
         #Function-SQL
-        filtered_SQL = [item for item in importList_SQL if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item["FileName"])]        
+        filtered_SQL = [item for item in importList_SQL if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item["FileName"])]
 
         for data_SQL in filtered_SQL:
             caller_function_name = ""
@@ -153,6 +137,9 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                 if int(callerFunction["startNum"]) <= int(data_SQL["colNum"]) <= int(callerFunction["endNum"]):
                     caller_function_name = callerFunction["function"]
                     break
+
+            if caller_function_name == "":
+                continue
             
             parentKey = caller_function_name + "_" + callFunc["fileNameFull"]
             childKey = data_SQL["Funcition"] + "_" + "SQL"
@@ -161,6 +148,44 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                 continue
             
             retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc["fileName"], data_SQL["Funcition"],True]             
+
+        filtered_SQL.clear()
+
+        #Function-Function(self)
+        tmpFunctionList=[]
+        tmpFunctionList = [item for item in targetProcess if (item["fileNameFull"] == callFunc["fileNameFull"] )]
+        function_pattern = "|".join(map(re.escape, [item["function"] for item in tmpFunctionList]))
+
+        with open(callFunc["fileNameFull"], 'r', encoding='utf-8') as file:
+            for line_number, line in enumerate(file, 1):
+
+                matches = extract_self_functions(line,function_pattern)            
+                
+                if len(matches) > 0:
+                    
+                    for match in matches:
+                        caller_function_name = ""
+                        callee_function_name = ""        
+                        callee_function_name = (match)
+        
+                        #Check Caller Func
+                        for callerFunction in tmpFunctionList:                   
+                            if int(callerFunction["startNum"]) <= line_number <= int(callerFunction["endNum"]):
+                                if callerFunction["function"] == callee_function_name:
+                                    continue
+                                caller_function_name = callerFunction["function"]
+                                break
+                        if caller_function_name == "":
+                            continue
+                        
+                        parentKey = caller_function_name + "_" + callFunc["fileNameFull"]
+                        childKey = callee_function_name + "_" + callFunc["fileNameFull"]
+                        
+                        if (parentKey,childKey) in retDist :
+                            continue
+                        
+                        retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc["fileName"], callee_function_name+"_"+ callFunc["fileName"],False] #0:Function / 1:SQL
+                        print(parentKey+","+childKey+","+caller_function_name+"_"+ callFunc["fileName"]+","+callee_function_name+"_"+ callFunc["fileName"])
 
         #Function-Function
         colNum=5
@@ -201,10 +226,8 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                                 caller_function_name = callerFunction["function"]
                                 break
                         
-                        #Debug用
                         if caller_function_name == "":
                             continue
-                        #     print()
 
                         parentKey = caller_function_name + "_" + callFunc["fileNameFull"]
                         childKey = callee_function_name + "_" + [item["fileNameFull"] for item in tmpFunctionList if item["function"] == callee_function_name][0]
@@ -220,6 +243,7 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                     # childKey = "None"
                     # #retDist[(parentKey,childKey)] = None
                     # print(parentKey+",'',"+ callFunc["function"]+"_"+ callFunc["fileName"]+",''")
+    print(f"End call : {file_path}") 
     return retDist
 
 def writeItem(outputFile,processDict,resultList,importList_SQL):
@@ -263,13 +287,13 @@ def writeItem(outputFile,processDict,resultList,importList_SQL):
 
         if tmpClass != processValue["fileName"]:
             ws.cell(row=calRow, column=calCol, value=f"{processValue["fileName"]}")
-            tmpClass = processValue["fileName"]    
+            tmpClass = processValue["fileName"]            
+        print(f"{processValue["function"]}")
+        print(f"col:{calCol}/row:{calRow}")
 
         calCol+=1        
         ws.cell(row=calRow, column=calCol, value=f"{processValue["function"]}")
-
-
-        calRow = writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL)
+        calRow = writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,processKey)
 
 
     # 全体のフォントを Meiryo に設定
@@ -281,25 +305,32 @@ def writeItem(outputFile,processDict,resultList,importList_SQL):
     # ファイルに保存
     wb.save(f"{outputFile}")
 
-def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL):
+def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,exKey):
 
         filteredDict = {tkey:tvalue for tkey,tvalue in resultList.items() if tkey[0] == processKey}
         tmpCalRow=calRow
         cnt = 0
 
-        if len(filteredDict)==0:
+        if len(filteredDict)==0 :
             return(tmpCalRow)
         else:
+         
             tmpCalCol=calCol + 1
             for key,value in filteredDict.items():
+
+                if exKey==key[1]:
+                    continue
+
                 cnt+=1
                 ws.cell(row=tmpCalRow, column=tmpCalCol, value=f"{value[1]}")
+
+                #print(f"col:{tmpCalCol}/row:{tmpCalRow}")
                 if value[2] == True:
                     #dicon/SQL
                     ws.cell(row=tmpCalRow, column=SQLID_COL, value=value[1])
                     ws.cell(row=tmpCalRow, column=SQL_COL, value=[item["SQL"] for item in importList_SQL if item["Funcition"] == value[1]][0])
 
-                ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key[1],resultList,importList_SQL)            
+                ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key[1],resultList,importList_SQL,key[0])            
                 tmpCalRow=ret+1                
                 
         return(tmpCalRow)
@@ -345,8 +376,6 @@ def runParalell(directory_path,importList_header,importList_detail,importList_SQ
         for entry in os.scandir(directory_path):
             if entry.is_dir(): 
                 file_path = entry.path+"\\output.csv"
-                if entry.path != "c:\\app\\extractModule\\output\\list\\jp_co_komatsu_emdw_web":
-                    continue
                 target = entry.path.split("\\")[-1].replace("_",".")
                 futures.append(executor.submit(call,file_path,target,processdict,importList_header,importList_detail,importList_SQL))
 
@@ -355,13 +384,12 @@ def runParalell(directory_path,importList_header,importList_detail,importList_SQ
             resultList.update(future.result())                            
         except Exception as e:
             print(f"Error processing folder: {e}") 
-    
-
 
     # for resultKey,resultValue in resultList.items():
     #     if any(resultKey[0] == key[1] for key in resultList.keys()):
     #         resultList[resultKey][2] = True
     
+    print(f"Start create document : {file_path}") 
     output_file = crrDir +  "\\output_TMP.csv"
     processDict = {}
     with open(output_file, mode='w', newline='', encoding='utf-8') as file:
