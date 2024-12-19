@@ -288,8 +288,7 @@ def writeItem(outputFile,processDict,resultList,importList_SQL):
         if tmpClass != processValue["fileName"]:
             ws.cell(row=calRow, column=calCol, value=f"{processValue["fileName"]}")
             tmpClass = processValue["fileName"]            
-        print(f"{processValue["function"]}")
-        print(f"col:{calCol}/row:{calRow}")
+        print(f"col:{calCol}/row:{calRow} {processValue["function"]}")
 
         calCol+=1        
         ws.cell(row=calRow, column=calCol, value=f"{processValue["function"]}")
@@ -318,13 +317,18 @@ def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,ex
             tmpCalCol=calCol + 1
             for key,value in filteredDict.items():
 
-                if exKey==key[1]:
+                exKeyList = exKey.split("$")
+                if tmpCalCol > 20:
+                    print()
+                if key[1] in exKeyList:
                     continue
+                else:
+                    exKey += "$"+key[1]
 
                 cnt+=1
                 ws.cell(row=tmpCalRow, column=tmpCalCol, value=f"{value[1]}")
 
-                #print(f"col:{tmpCalCol}/row:{tmpCalRow}")
+                print(f"col:{tmpCalCol}/row:{tmpCalRow} {value[1]}")
                 if value[2] == True:
                     #dicon/SQL
                     ws.cell(row=tmpCalRow, column=SQLID_COL, value=value[1])
