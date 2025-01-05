@@ -17,7 +17,7 @@ def getTimeString():
 
 def search_files_in_directory(root_dir, pattern):
     # 正規表現パターンをコンパイル
-    regex = re.compile(pattern)
+    regex = re.compile(pattern, re.DOTALL)
     
     # 結果を格納するリスト
     results = []
@@ -33,10 +33,12 @@ def search_files_in_directory(root_dir, pattern):
                     file_content = file.read()
 
                 # ファイルの中身が正規表現に一致する場合
-                matches = regex.findall(file_content.replace("\n",""))
+                matches = regex.findall(file_content)
+                # matches = regex.findall(file_content.replace("\n",""))
 
-                # 一致があれば結果に追加
+                # 一致があれば結果に追加0
                 for match in matches:
+                    
                     results.append([filename, dirpath, match,match[0],match[2]])
 
             except Exception as e:

@@ -17,9 +17,14 @@ importList = []
 importList_header = []
 importList_detail = []
 
-SQLID_COL = 17
-SQL_COL = 18
+SQLID_COL = 32
+SQL_COL = 33
 
+def getTimeString():
+    """get Month
+    Args:
+    """        
+    return dt_now.strftime('%Y%m%d%H%M%S')
 
 def load_csv_to_objects(file_path):
     objects = []
@@ -122,6 +127,8 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
         else:
             tmpFileName = callFunc["fileName"] 
         
+
+
         # if tmpFileName == "EMDW0403Action":
         #     print()
         # else:
@@ -131,6 +138,7 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
         filtered_SQL = [item for item in importList_SQL if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item["FileName"])]
 
         for data_SQL in filtered_SQL:
+
             caller_function_name = ""
             #Check Caller Func
             for callerFunction in  [item for item in targetProcess if item["fileName"] == callFunc["fileName"]and item["fileNameFull"]==callFunc["fileNameFull"]] :                   
@@ -161,6 +169,10 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
 
                 matches = extract_self_functions(line,function_pattern)            
                 
+                
+                if tmpFileName == "EMDW0101Action":
+                    print()
+
                 if len(matches) > 0:
                     
                     for match in matches:
@@ -193,6 +205,7 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
 
         for data_header in filtered_data_header:
             
+            
             if data_header["line"].startswith("//") or data_header["line"].startswith("/*"):
                 continue
             calleeKey = ".".join(data_header["line"].replace("import","").replace(";","").strip().split(".")[:colNum])
@@ -204,6 +217,9 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
             filtered_data_detail = [item for item in importList_detail 
                                         if item["FileName"]==data_header["FileName"] and item["ParentPath"]==data_header["ParentPath"] and item["Funcition"]==data_header["Funcition"]
                                         and not(item["line"].strip().startswith("//")) and not(item["line"].strip().startswith("/*"))]     
+
+            if tmpFileName == "EMDW0101Action":
+                print()
 
             for data_detail in filtered_data_detail:
                 matches = extract_nested_functions(data_detail["line"],function_pattern)            
@@ -246,65 +262,85 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
     print(f"End call : {file_path}") 
     return retDist
 
-def writeItem(outputFile,processDict,resultList,importList_SQL):
+def writeItem(processDict,resultList,importList_SQL):
 
     #Excel出力
+    fileNo = 0
+    procEndList = []
 
-    # 新しいワークブックを作成
-    wb = Workbook()
+    while(True):
 
-    # アクティブなシートを取得
-    ws = wb.active
+        fileNo += 1
+        outputFile =  "./output" + getTimeString() + "_" + str(fileNo) + ".xlsx"
 
-    # データを追加
-    ws.title = "イベントシート"
-    
-    calRow=1
-    calCol=1
-    
-    ws.cell(row=calRow, column=calCol, value=f"対象ファイル")
-    target_column_letter = get_column_letter(calCol)  # 数字をアルファベットに変換
-    ws.column_dimensions[target_column_letter].width = 25
-    calCol+=1
+        # 新しいワークブックを作成
+        wb = Workbook()
 
-    for i in range(15):
-        target_column_letter = get_column_letter(calCol)  
-        ws.column_dimensions[target_column_letter].width = 50
-        ws.cell(row=calRow, column=calCol, value=f"区分{calCol-1}")
+        # アクティブなシートを取得
+        ws = wb.active
+
+        # データを追加
+        ws.title = "イベントシート"
+        
+        calRow=1
+        calCol=1
+        
+        ws.cell(row=calRow, column=calCol, value=f"対象ファイル")
+        target_column_letter = get_column_letter(calCol)  # 数字をアルファベットに変換
+        ws.column_dimensions[target_column_letter].width = 25
         calCol+=1
 
-    #dicon/SQL
-    ws.column_dimensions[get_column_letter(SQLID_COL)].width = 50
-    ws.column_dimensions[get_column_letter(SQL_COL)].width = 50
-    ws.cell(row=calRow, column=SQLID_COL, value=f"SQLID")
-    ws.cell(row=calRow, column=SQL_COL, value=f"SQL")
+        for i in range(30):
+            target_column_letter = get_column_letter(calCol)  
+            ws.column_dimensions[target_column_letter].width = 50
+            ws.cell(row=calRow, column=calCol, value=f"区分{calCol-1}")
+            calCol+=1
 
-    tmpClass = ""
-    for processKey,processValue in processDict.items():
+        #dicon/SQL
+        ws.column_dimensions[get_column_letter(SQLID_COL)].width = 50
+        ws.column_dimensions[get_column_letter(SQL_COL)].width = 50
+        ws.cell(row=calRow, column=SQLID_COL, value=f"SQLID")
+        ws.cell(row=calRow, column=SQL_COL, value=f"SQL")
 
-        calRow+=1
-        calCol=1
+        tmpClass = ""
+            
+        for processKey,processValue in processDict.items():
 
-        if tmpClass != processValue["fileName"]:
-            ws.cell(row=calRow, column=calCol, value=f"{processValue["fileName"]}")
-            tmpClass = processValue["fileName"]            
-        print(f"col:{calCol}/row:{calRow} {processValue["function"]}")
+            calRow+=1
+            calCol=1
 
-        calCol+=1        
-        ws.cell(row=calRow, column=calCol, value=f"{processValue["function"]}")
-        calRow = writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,processKey)
+            if tmpClass != processValue["fileName"]:
+                ws.cell(row=calRow, column=calCol, value=f"{processValue["fileName"]}")
+                tmpClass = processValue["fileName"]            
+            print(f"col:{calCol}/row:{calRow} {processValue["function"]}")
 
+            calCol+=1        
+            ws.cell(row=calRow, column=calCol, value=f"{processValue["function"]}")
+            calRow = writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,processValue["function"])
 
-    # 全体のフォントを Meiryo に設定
-    meiryo_font = Font(name="Meiryo")
-    for row in ws.iter_rows():
-        for cell in row:
-            cell.font = meiryo_font
+            if calRow > 100000:
+                break
 
-    # ファイルに保存
-    wb.save(f"{outputFile}")
+            procEndList.append(processKey)
 
-def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,exKey):
+        # 全体のフォントを Meiryo に設定
+        meiryo_font = Font(name="Meiryo")
+        for row in ws.iter_rows():
+            for cell in row:
+                cell.font = meiryo_font
+
+        # ファイルに保存
+        wb.save(f"{outputFile}")
+
+        print(f"{outputFile}のファイル作成が完了しました！")
+        
+        for procEnd in procEndList:            
+            del processDict[procEnd]
+        
+        if len(processDict) == 0:
+            break
+
+def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,exValue):
 
         filteredDict = {tkey:tvalue for tkey,tvalue in resultList.items() if tkey[0] == processKey}
         tmpCalRow=calRow
@@ -317,13 +353,12 @@ def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,ex
             tmpCalCol=calCol + 1
             for key,value in filteredDict.items():
 
-                exKeyList = exKey.split("$")
-                if tmpCalCol > 20:
-                    print()
-                if key[1] in exKeyList:
-                    continue
-                else:
-                    exKey += "$"+key[1]
+                exKeyList = exValue.split("$")
+                if len(exKeyList) > 0:
+                    if value[1] in exKeyList:
+                        continue
+                    else:
+                        exValue += "$"+value[1]                
 
                 cnt+=1
                 ws.cell(row=tmpCalRow, column=tmpCalCol, value=f"{value[1]}")
@@ -334,7 +369,7 @@ def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,ex
                     ws.cell(row=tmpCalRow, column=SQLID_COL, value=value[1])
                     ws.cell(row=tmpCalRow, column=SQL_COL, value=[item["SQL"] for item in importList_SQL if item["Funcition"] == value[1]][0])
 
-                ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key[1],resultList,importList_SQL,key[0])            
+                ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key[1],resultList,importList_SQL,exValue)            
                 tmpCalRow=ret+1                
                 
         return(tmpCalRow)
@@ -408,9 +443,7 @@ def runParalell(directory_path,importList_header,importList_detail,importList_SQ
             #resultList[resultKey][2] = True                               
         
 
-    writeItem("./output.xlsx",processDict,resultList,importList_SQL)
-
-    print("Excelファイル 'output.xlsx' を作成しました！")
+    writeItem(processDict,resultList,importList_SQL)
 
 if __name__ == "__main__":
 

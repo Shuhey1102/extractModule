@@ -9,8 +9,7 @@ import concurrent
 #current datetime
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
-
-baseURL = "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\"
+baseURL = "C:\\New_EQP-Care(Web)\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 #baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
 class FunctionInfo:
@@ -31,15 +30,39 @@ class FunctionInfo:
                 f"start_line={self.start_line}, end_line={self.end_line},FileNameFull='{self.ClassNameFull}'")
 
 class JavaFileAnalyzer:
+
+    # 除外キーワードのリスト
+    EXCLUDE_KEYWORDS = [
+        "if", "while", "for", "switch", "catch",  # 制御構文
+        "IllegalArgumentException", "RuntimeException", "IllegalStateException","SQLRuntimeException", # 例外
+        "ArrayList", "HashMap", "LinkedList",  # クラス名
+    ]
+    # キーワードを正規表現形式に
+    exclude_pattern = r'|'.join(EXCLUDE_KEYWORDS)
+    
     class_pattern = re.compile(r'\b(public\s+)?(final\s+)?(class|interface)\s+\w+')
-    method_partial_pattern = re.compile(r'\b(public|protected|private|static|final|\s)*\s*(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*')
+    #method_partial_pattern = re.compile(r'\b(public|protected|private|static|final|\s)*\s*(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*')
     #method_partial_pattern = re.compile(r'\b(public|protected|private|static|final|\s)\s+(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*')
-    method_pattern = re.compile(r'\b(public|protected|private|static|final|\s)*\s*(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{')
+    method_partial_pattern = re.compile(
+        rf'\b(public|protected|private|static|final|\s)*\s*'  # 修飾子
+        rf'(static|final|\s)?\s*'                              # static や final
+        rf'(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+'       # 戻り値の型
+        rf'(?!{exclude_pattern})\w+\s*'                        # メソッド名。ただし除外キーワードは含めない
+        rf'\(.*'                                               # 引数リストの始まり（改行考慮）
+    )
+    #method_pattern = re.compile(r'\b(public|protected|private|static|final|\s)*\s*(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{')
+    method_pattern = re.compile(
+        rf'\b(public|protected|private|static|final|\s)*\s*'  # 修飾子
+        rf'(static|final|\s)?\s*'                              # static や final
+        rf'(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+'       # 戻り値の型
+        rf'(?!{exclude_pattern})\w+\s*'                        # メソッド名。ただし除外キーワードは含めない
+        rf'\(.*\)\s*'                                          # 引数リスト
+        rf'(throws\s+\w+(\s*,\s*\w+)*)?\s*\{{'                 # throws と本体の開始
+    )
     #method_pattern = re.compile(r'\b(public|protected|private|static|final|\s)\s+(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{')
     sb_append_pattern = re.compile(r'sb\.append\s*\(.*?[{}].*?\)')
     comment_pattern = re.compile(r'^\s*//')
-
-
+    
     def __init__(self):
         self.functions = []
 
@@ -79,9 +102,11 @@ class JavaFileAnalyzer:
 
                     # Function Detection using `{` split to get function signature
                     if in_class_scope and self.method_pattern.search(line) and not(checkMethod):
+                            
                         function_signature = line.strip().split('{')[0].strip()
                         function_obj = FunctionInfo(file.name,className,function_signature, line_number, None)
                         stack.append(function_obj)
+
                     elif in_class_scope and self.method_partial_pattern.search(line)  and not(checkMethod):
                         checkMethod=True
                         tmpFunction_signature = line.strip()
