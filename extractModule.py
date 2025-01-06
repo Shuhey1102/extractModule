@@ -57,7 +57,8 @@ def write_results_to_csv(results, output_dir,cnt):
     with open(output_file, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         if cnt == 0 :
-            writer.writerow(['FileName', 'ParentPath', 'targetWord','line','Funcition','colNum','header/detail']) 
+            #writer.writerow(['FileName', 'ParentPath', 'targetWord','line','Funcition','colNum','header/detail']) 
+            writer.writerow(['FileName', 'ParentPath', 'targetWord','colNum']) 
         writer.writerows(results)    
 
 def process_folder(folder_path,file_name, keywords):
