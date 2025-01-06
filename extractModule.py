@@ -9,7 +9,10 @@ OKExtention = (
     ".sql",
     ".dicon",
     ".java",
-    ".xml"
+    ".xml",
+    ".db",
+    "jav",
+    "json"
 )
 
 
