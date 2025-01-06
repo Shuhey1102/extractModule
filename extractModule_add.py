@@ -40,9 +40,6 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
                     
                     for line_number, line in enumerate(file, start=1):  # 行番号をカウント
 
-                        # if file_path == "C:\\emd-web-struts2.5\\emd-web-struts2.5\\src\\jp\\co\\komatsu\\emdw\\business\\service\\impl\\TEMAB02ServiceImpl.java":
-                        #     print()
-
                         # ファイルの中身に対してキーワードを検索
                         for keyword in keywords:
                             if keyword in line:
@@ -90,7 +87,7 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
 
                         if not(line.strip().startswith("import")) and havetoSerch2:                        
                             class_pattern = "|".join(re.escape(item) for item in serchVal)
-                            pattern =  rf"(?:private|public|protected|static)?\s*(?:final\s+)?({class_pattern})\s+(\w+);"
+                            pattern =  rf"({class_pattern})\s+(\w+)\s+="
                             for match in re.finditer(pattern, line.strip()):                            
                                 details.append([match.group(1),match.group(2)])
 

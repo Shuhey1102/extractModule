@@ -38,7 +38,7 @@ def search_files_for_keywords_in_folder(folder_path,file_name, keywords):
                 for line_number, line in enumerate(file, start=1):  # 行番号をカウント
                     # ファイルの中身に対してキーワードを検索
                     for keyword in keywords:
-                        if keyword in line:
+                        if keyword in line.upper():
 
                             # 一致した場合、結果に追加
                             results.append([file_name, folder_path, keyword, line.strip(), line_number])                                
@@ -95,9 +95,9 @@ def main():
             # 結果をフォルダごとのoutput.csvに書き出し
             if results:
                 #output_dir = os.path.join(folder_path, 'output')
-                output_dir = f"{crrDir}\\output\\"                                
+                output_dir = f"{crrDir}\\output\\"                                                
                 write_results_to_csv(results, output_dir,cnt)
-            cnt+=1
+                cnt+=1
 
         except Exception as e:
             print(f"Error processing folder: {e}")

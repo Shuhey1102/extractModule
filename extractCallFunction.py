@@ -17,8 +17,8 @@ importList = []
 importList_header = []
 importList_detail = []
 
-SQLID_COL = 32
-SQL_COL = 33
+SQLID_COL = 17
+SQL_COL = 18
 
 def getTimeString():
     """get Month
@@ -168,13 +168,12 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
             for line_number, line in enumerate(file, 1):
 
                 matches = extract_self_functions(line,function_pattern)            
-                
-                
-                if tmpFileName == "EMDW0101Action":
-                    print()
-
+            
                 if len(matches) > 0:
                     
+                    if tmpFileName == "EMDW0101Action":
+                        print() 
+
                     for match in matches:
                         caller_function_name = ""
                         callee_function_name = ""        
@@ -187,6 +186,7 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                                     continue
                                 caller_function_name = callerFunction["function"]
                                 break
+
                         if caller_function_name == "":
                             continue
                         
@@ -218,12 +218,9 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                                         if item["FileName"]==data_header["FileName"] and item["ParentPath"]==data_header["ParentPath"] and item["Funcition"]==data_header["Funcition"]
                                         and not(item["line"].strip().startswith("//")) and not(item["line"].strip().startswith("/*"))]     
 
-            if tmpFileName == "EMDW0101Action":
-                print()
-
             for data_detail in filtered_data_detail:
                 matches = extract_nested_functions(data_detail["line"],function_pattern)            
-                
+
                 if len(matches) > 0 and len(tmpFunctionList) > 0:
                     
                     for match in matches:
@@ -290,7 +287,7 @@ def writeItem(processDict,resultList,importList_SQL):
         ws.column_dimensions[target_column_letter].width = 25
         calCol+=1
 
-        for i in range(30):
+        for i in range(15):
             target_column_letter = get_column_letter(calCol)  
             ws.column_dimensions[target_column_letter].width = 50
             ws.cell(row=calRow, column=calCol, value=f"区分{calCol-1}")
@@ -318,7 +315,7 @@ def writeItem(processDict,resultList,importList_SQL):
             ws.cell(row=calRow, column=calCol, value=f"{processValue["function"]}")
             calRow = writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,processValue["function"])
 
-            if calRow > 100000:
+            if calRow > 500000:
                 break
 
             procEndList.append(processKey)
@@ -340,7 +337,12 @@ def writeItem(processDict,resultList,importList_SQL):
         if len(processDict) == 0:
             break
 
+        procEndList.clear()
+
 def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,exValue):
+
+        if exValue =="findDET901ByCreDate_DetDaoImpl":
+            print()
 
         filteredDict = {tkey:tvalue for tkey,tvalue in resultList.items() if tkey[0] == processKey}
         tmpCalRow=calRow
