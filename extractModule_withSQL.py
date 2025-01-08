@@ -65,7 +65,7 @@ def write_results_to_csv(results, output_dir,cnt):
     with open(output_file, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         if int(cnt) == 0 :
-            writer.writerow(['FileName', 'ParentPath', 'targetWord','line','Funcition','colNum','SQL']) 
+            writer.writerow(['fileName', 'ParentPath', 'targetWord','line','funcition','colNum','SQL']) 
         writer.writerows(results)
 
 def process_folder(dirname ,folder_path, keywords):
@@ -110,9 +110,7 @@ def main():
                 #output_dir = os.path.join(folder_path, 'output')
                 output_dir = f"{crrDir}\\output\\"
                 write_results_to_csv(results,output_dir,cnt)
-            else:
-                continue
-            cnt+=1
+                cnt+=1            
 
         except Exception as e:
             print(f"Error processing folder: {e}")

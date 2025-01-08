@@ -9,8 +9,8 @@ import concurrent
 #current datetime
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
-baseURL = "C:\\New_EQP-Care(Web)\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
-#baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+#baseURL = "C:\\New_EQP-Care(Web)\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
 class FunctionInfo:
     def __init__(self,function_Name, function_className ,function_signature, start_line, end_line):
@@ -102,8 +102,17 @@ class JavaFileAnalyzer:
 
                     # Function Detection using `{` split to get function signature
                     if in_class_scope and self.method_pattern.search(line) and not(checkMethod):
-                            
+                        
+                        checkExclude = False
                         function_signature = line.strip().split('{')[0].strip()
+                        for key in self.EXCLUDE_KEYWORDS:
+                            if key == function_signature.split('(')[0].split()[-1]:
+                                checkExclude = True
+                                break
+
+                        if checkExclude:
+                            continue
+
                         function_obj = FunctionInfo(file.name,className,function_signature, line_number, None)
                         stack.append(function_obj)
 

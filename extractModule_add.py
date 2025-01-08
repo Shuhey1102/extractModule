@@ -105,7 +105,7 @@ def write_results_to_csv(results, output_dir,cnt):
     with open(output_file, mode='a', newline='', encoding='utf-8') as file:        
         writer = csv.writer(file)
         if int(cnt) == 0 :
-            writer.writerow(['FileName', 'ParentPath', 'targetWord','line','Funcition','colNum','header/detail']) 
+            writer.writerow(['fileName', 'ParentPath', 'targetWord','line','funcition','colNum','header/detail']) 
         writer.writerows(results)
 
 def process_folder(dirname ,folder_path, keywords):

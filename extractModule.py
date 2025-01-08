@@ -1,24 +1,15 @@
 import os
 import csv
 from concurrent.futures import ProcessPoolExecutor
-import extractSQL_lib
 import datetime
 import concurrent
-
-OKExtention = (
-    ".sql",
-    ".dicon",
-    ".java",
-    ".xml",
-    ".db",
-    "jav",
-    "json"
-)
-
+import sys
 
 #current datetime
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
+# crrDir = sys.argv[1]
+# os.chdir(crrDir)
 
 def getTimeString():
     """get Month
@@ -26,9 +17,22 @@ def getTimeString():
     """        
     return dt_now.strftime('%Y%m%d%H%M%S')
 
-outputFilename = f"output_2_{getTimeString()}.csv"
+#csvFile
+def getFirstColFromCsvFile(file):
 
-def search_files_for_keywords_in_folder(folder_path,file_name, keywords):
+    list = []
+    with open(f"{crrDir}\\config\\{file}", 'r',encoding="utf-8") as f:
+        reader = csv.reader(f, delimiter=",", doublequote=True, lineterminator="\r\n", quotechar='"', skipinitialspace=True)
+        
+        for row in reader:
+            if row:  
+                list.append(row[0])
+        
+    return list
+
+outputFilename = f"output_1_{getTimeString()}.csv"
+
+def search_files_for_keywords_in_folder(folder_path,file_name, keywords,OKExtention):
     # 結果を格納するリスト
     results = []
 
@@ -61,15 +65,46 @@ def write_results_to_csv(results, output_dir,cnt):
             writer.writerow(['FileName', 'ParentPath', 'targetWord','colNum']) 
         writer.writerows(results)    
 
-def process_folder(folder_path,file_name, keywords):
+def process_folder(folder_path,file_name, keywords,OKExtention):
     # フォルダ内のファイルを検索して結果を取得
-    return search_files_for_keywords_in_folder(folder_path,file_name, keywords)
+    return search_files_for_keywords_in_folder(folder_path,file_name, keywords,OKExtention)
 
 def main():
+
+    OKExtention = tuple(getFirstColFromCsvFile("OKExtention.csv"))
+    keywords = getFirstColFromCsvFile("TargetWord.csv")
+
     # キーワードリストを直接指定
-    keywords = [
-        "(+)","CONCAT","CURRENT DATE","CURRENT TIME","CURRENT TIMESTAMP","DATE(","DECODE","DECODE(","FETCH FIRST ","FROM (","HOUR(","INT(","INTEGER","INTEGER(","MINUTE","MINUTE(","NVL","OPTIMIZE FOR ","REPLACE","ROUND","ROWNUM","SUBSTR","TO_CHAR","TO_DATE","TRIM","TRUNC","VALUE(","||"
-    ]
+    # keywords = [
+    #     "(+)",
+    #     "CONCAT",
+    #     "CURRENT DATE",
+    #     "CURRENT TIME",
+    #     "CURRENT TIMESTAMP",
+    #     "DATE(",
+    #     "DECODE",
+    #     "DECODE(",
+    #     "FETCH FIRST ",
+    #     "FROM (",
+    #     "HOUR(",
+    #     "INT(",
+    #     "INTEGER",
+    #     "INTEGER(",
+    #     "MINUTE",
+    #     "MINUTE(",
+    #     "NVL",
+    #     "OPTIMIZE FOR",
+    #     "REPLACE",
+    #     "ROUND",
+    #     "ROWNUM",
+    #     "SUBSTR",
+    #     "TO_CHAR",
+    #     "TO_DATE",
+    #     "TRIM",
+    #     "TRUNC",
+    #     "VALUE(",
+    #     "||"
+    # ]
 
     # while(True):
     #     isEnd = input("追加すべき検索キーワードがありますか？(y:n): ")
@@ -89,7 +124,7 @@ def main():
         for dirpath, _, filenames in os.walk(root_dir):
             # サブフォルダごとに処理を開始
             for filename in filenames:
-                futures.append(executor.submit(process_folder, dirpath, filename, keywords))                
+                futures.append(executor.submit(process_folder, dirpath, filename, keywords,OKExtention))                
 
     cnt = 0
     for future in concurrent.futures.as_completed(futures):

@@ -122,10 +122,10 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
     targetProcess = processdict[target]
     for callFunc in targetProcess:
               
-        if tmpFileName == callFunc["fileName"]:
+        if tmpFileName == callFunc['fileName']:
             continue
         else:
-            tmpFileName = callFunc["fileName"] 
+            tmpFileName = callFunc['fileName'] 
         
 
 
@@ -135,15 +135,15 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
         #     continue
 
         #Function-SQL
-        filtered_SQL = [item for item in importList_SQL if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item["FileName"])]
+        filtered_SQL = [item for item in importList_SQL if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item['fileName'])]
 
         for data_SQL in filtered_SQL:
 
             caller_function_name = ""
             #Check Caller Func
-            for callerFunction in  [item for item in targetProcess if item["fileName"] == callFunc["fileName"]and item["fileNameFull"]==callFunc["fileNameFull"]] :                   
+            for callerFunction in  [item for item in targetProcess if item['fileName'] == callFunc['fileName']and item["fileNameFull"]==callFunc["fileNameFull"]] :                   
                 if int(callerFunction["startNum"]) <= int(data_SQL["colNum"]) <= int(callerFunction["endNum"]):
-                    caller_function_name = callerFunction["function"]
+                    caller_function_name = callerFunction['function']
                     break
 
             if caller_function_name == "":
@@ -155,14 +155,14 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
             if (parentKey,childKey) in retDist :
                 continue
             
-            retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc["fileName"], data_SQL["Funcition"],True]             
+            retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc['fileName'], data_SQL["Funcition"],True]             
 
         filtered_SQL.clear()
 
         #Function-Function(self)
         tmpFunctionList=[]
         tmpFunctionList = [item for item in targetProcess if (item["fileNameFull"] == callFunc["fileNameFull"] )]
-        function_pattern = "|".join(map(re.escape, [item["function"] for item in tmpFunctionList]))
+        function_pattern = "|".join(map(re.escape, [item['function'] for item in tmpFunctionList]))
 
         with open(callFunc["fileNameFull"], 'r', encoding='utf-8') as file:
             for line_number, line in enumerate(file, 1):
@@ -182,9 +182,9 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                         #Check Caller Func
                         for callerFunction in tmpFunctionList:                   
                             if int(callerFunction["startNum"]) <= line_number <= int(callerFunction["endNum"]):
-                                if callerFunction["function"] == callee_function_name:
+                                if callerFunction['function'] == callee_function_name:
                                     continue
-                                caller_function_name = callerFunction["function"]
+                                caller_function_name = callerFunction['function']
                                 break
 
                         if caller_function_name == "":
@@ -196,12 +196,12 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                         if (parentKey,childKey) in retDist :
                             continue
                         
-                        retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc["fileName"], callee_function_name+"_"+ callFunc["fileName"],False] #0:Function / 1:SQL
-                        print(parentKey+","+childKey+","+caller_function_name+"_"+ callFunc["fileName"]+","+callee_function_name+"_"+ callFunc["fileName"])
+                        retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc['fileName'], callee_function_name+"_"+ callFunc['fileName'],False] #0:Function / 1:SQL
+                        print(parentKey+","+childKey+","+caller_function_name+"_"+ callFunc['fileName']+","+callee_function_name+"_"+ callFunc['fileName'])
 
         #Function-Function
         colNum=5
-        filtered_data_header = [item for item in importList_header if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item["FileName"])]        
+        filtered_data_header = [item for item in importList_header if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item['fileName'])]        
 
         for data_header in filtered_data_header:
             
@@ -209,13 +209,13 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
             if data_header["line"].startswith("//") or data_header["line"].startswith("/*"):
                 continue
             calleeKey = ".".join(data_header["line"].replace("import","").replace(";","").strip().split(".")[:colNum])
-            tmpFunctionList = [item for item in processdict[calleeKey] if (item["fileName"] == data_header["Funcition"] or item["fileName"] == (data_header["Funcition"] + "Impl"))]
+            tmpFunctionList = [item for item in processdict[calleeKey] if (item['fileName'] == data_header["Funcition"] or item['fileName'] == (data_header["Funcition"] + "Impl"))]
 
-            function_pattern = "|".join(map(re.escape, [item["function"] for item in tmpFunctionList]))
+            function_pattern = "|".join(map(re.escape, [item['function'] for item in tmpFunctionList]))
 
 
             filtered_data_detail = [item for item in importList_detail 
-                                        if item["FileName"]==data_header["FileName"] and item["ParentPath"]==data_header["ParentPath"] and item["Funcition"]==data_header["Funcition"]
+                                        if item['fileName']==data_header['fileName'] and item["ParentPath"]==data_header["ParentPath"] and item["Funcition"]==data_header["Funcition"]
                                         and not(item["line"].strip().startswith("//")) and not(item["line"].strip().startswith("/*"))]     
 
             for data_detail in filtered_data_detail:
@@ -231,31 +231,31 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                         caller_function_name = ""
         
                         callee_instance_name, callee_function_name = (match[0],match[1])
-                        callee_class_name = [item["fileName"] for item in tmpFunctionList if item["function"] == callee_function_name][0]        
+                        callee_class_name = [item['fileName'] for item in tmpFunctionList if item['function'] == callee_function_name][0]        
         
                         #Check Caller Func
-                        for callerFunction in  [item for item in targetProcess if item["fileName"] == callFunc["fileName"]and item["fileNameFull"]==callFunc["fileNameFull"]] :                   
+                        for callerFunction in  [item for item in targetProcess if item['fileName'] == callFunc['fileName']and item["fileNameFull"]==callFunc["fileNameFull"]] :                   
                             if int(callerFunction["startNum"]) <= int(data_detail["colNum"]) <= int(callerFunction["endNum"]):
-                                caller_function_name = callerFunction["function"]
+                                caller_function_name = callerFunction['function']
                                 break
                         
                         if caller_function_name == "":
                             continue
 
                         parentKey = caller_function_name + "_" + callFunc["fileNameFull"]
-                        childKey = callee_function_name + "_" + [item["fileNameFull"] for item in tmpFunctionList if item["function"] == callee_function_name][0]
+                        childKey = callee_function_name + "_" + [item["fileNameFull"] for item in tmpFunctionList if item['function'] == callee_function_name][0]
                         
                         if (parentKey,childKey) in retDist :
                             continue
                         
-                        retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc["fileName"], callee_function_name+"_"+ callee_class_name,False] #0:Function / 1:SQL
-                        print(parentKey+","+childKey+","+caller_function_name+"_"+ callFunc["fileName"]+","+callee_function_name+"_"+ callee_class_name)
+                        retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc['fileName'], callee_function_name+"_"+ callee_class_name,False] #0:Function / 1:SQL
+                        print(parentKey+","+childKey+","+caller_function_name+"_"+ callFunc['fileName']+","+callee_function_name+"_"+ callee_class_name)
                 else:
                     continue
-                    # parentKey = callFunc["function"] + "_" + callFunc["fileNameFull"]
+                    # parentKey = callFunc['function'] + "_" + callFunc["fileNameFull"]
                     # childKey = "None"
                     # #retDist[(parentKey,childKey)] = None
-                    # print(parentKey+",'',"+ callFunc["function"]+"_"+ callFunc["fileName"]+",''")
+                    # print(parentKey+",'',"+ callFunc['function']+"_"+ callFunc['fileName']+",''")
     print(f"End call : {file_path}") 
     return retDist
 
@@ -306,14 +306,14 @@ def writeItem(processDict,resultList,importList_SQL):
             calRow+=1
             calCol=1
 
-            if tmpClass != processValue["fileName"]:
-                ws.cell(row=calRow, column=calCol, value=f"{processValue["fileName"]}")
-                tmpClass = processValue["fileName"]            
-            print(f"col:{calCol}/row:{calRow} {processValue["function"]}")
+            if tmpClass != processValue['fileName']:
+                ws.cell(row=calRow, column=calCol, value=f"{processValue['fileName']}")
+                tmpClass = processValue['fileName']            
+            print(f"col:{calCol}/row:{calRow} {processValue['function']}")
 
             calCol+=1        
-            ws.cell(row=calRow, column=calCol, value=f"{processValue["function"]}")
-            calRow = writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,processValue["function"])
+            ws.cell(row=calRow, column=calCol, value=f"{processValue['function']}")
+            calRow = writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,processValue['function'])
 
             if calRow > 500000:
                 break
