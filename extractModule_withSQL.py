@@ -28,7 +28,7 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
     # 正規表現の作成
     dao_pattern = "|".join(re.escape(func) for func in daoFunction)
     sql_pattern = "|".join(re.escape(sql[3]) for sql in keywords)
-    regex_pattern = rf"({dao_pattern})\(\"({sql_pattern})\".*?\);"
+    regex_pattern = rf"({dao_pattern})\(\"({sql_pattern})\".*?"
 
     # フォルダ内の全てのファイルを走査
     for dirpath, _, filenames in os.walk(folder_path):
