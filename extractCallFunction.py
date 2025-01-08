@@ -150,12 +150,12 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                 continue
             
             parentKey = caller_function_name + "_" + callFunc["fileNameFull"]
-            childKey = data_SQL["Funcition"] + "_" + "SQL"
+            childKey = data_SQL['funcition'] + "_" + "SQL"
             
             if (parentKey,childKey) in retDist :
                 continue
             
-            retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc['fileName'], data_SQL["Funcition"],True]             
+            retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc['fileName'], data_SQL['funcition'],True]             
 
         filtered_SQL.clear()
 
@@ -209,13 +209,13 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
             if data_header["line"].startswith("//") or data_header["line"].startswith("/*"):
                 continue
             calleeKey = ".".join(data_header["line"].replace("import","").replace(";","").strip().split(".")[:colNum])
-            tmpFunctionList = [item for item in processdict[calleeKey] if (item['fileName'] == data_header["Funcition"] or item['fileName'] == (data_header["Funcition"] + "Impl"))]
+            tmpFunctionList = [item for item in processdict[calleeKey] if (item['fileName'] == data_header['funcition'] or item['fileName'] == (data_header['funcition'] + "Impl"))]
 
             function_pattern = "|".join(map(re.escape, [item['function'] for item in tmpFunctionList]))
 
 
             filtered_data_detail = [item for item in importList_detail 
-                                        if item['fileName']==data_header['fileName'] and item["ParentPath"]==data_header["ParentPath"] and item["Funcition"]==data_header["Funcition"]
+                                        if item['fileName']==data_header['fileName'] and item["ParentPath"]==data_header["ParentPath"] and item['funcition']==data_header['funcition']
                                         and not(item["line"].strip().startswith("//")) and not(item["line"].strip().startswith("/*"))]     
 
             for data_detail in filtered_data_detail:
@@ -369,7 +369,7 @@ def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,ex
                 if value[2] == True:
                     #dicon/SQL
                     ws.cell(row=tmpCalRow, column=SQLID_COL, value=value[1])
-                    ws.cell(row=tmpCalRow, column=SQL_COL, value=[item["SQL"] for item in importList_SQL if item["Funcition"] == value[1]][0])
+                    ws.cell(row=tmpCalRow, column=SQL_COL, value=[item["SQL"] for item in importList_SQL if item['funcition'] == value[1]][0])
 
                 ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key[1],resultList,importList_SQL,exValue)            
                 tmpCalRow=ret+1                
