@@ -98,7 +98,6 @@ def main():
             if entry.is_dir(): 
                 folder_path = entry.path
                 futures.append(executor.submit(process_folder, entry.name ,folder_path, keywords))                               
-
     
     cnt = 0
     for future in concurrent.futures.as_completed(futures):

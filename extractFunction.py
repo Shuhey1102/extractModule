@@ -9,8 +9,8 @@ import concurrent
 #current datetime
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
-#baseURL = "C:\\New_EQP-Care(Web)\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
-baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+baseURL = "C:\\New_EQP-Care(Web)\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+#baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
 class FunctionInfo:
     def __init__(self,function_Name, function_className ,function_signature, start_line, end_line):
@@ -44,21 +44,26 @@ class JavaFileAnalyzer:
     #method_partial_pattern = re.compile(r'\b(public|protected|private|static|final|\s)*\s*(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*')
     #method_partial_pattern = re.compile(r'\b(public|protected|private|static|final|\s)\s+(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*')
     method_partial_pattern = re.compile(
-        rf'\b(public|protected|private|static|final|\s)*\s*'  # 修飾子
+        rf'^[ \t]*'                                            # 行頭の空白（インデント対応）
+        rf'(public|protected|private|static|final|\s)*\s*'     # 修飾子
         rf'(static|final|\s)?\s*'                              # static や final
         rf'(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+'       # 戻り値の型
         rf'(?!{exclude_pattern})\w+\s*'                        # メソッド名。ただし除外キーワードは含めない
-        rf'\(.*'                                               # 引数リストの始まり（改行考慮）
+        rf'\([^)]*\)'                                          # 引数リスト（`()` 内）
+        rf'(\s*\{{|\s*\}})'                                      # メソッドの開始か終了のブレース（中括弧）
     )
+
     #method_pattern = re.compile(r'\b(public|protected|private|static|final|\s)*\s*(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{')
     method_pattern = re.compile(
-        rf'\b(public|protected|private|static|final|\s)*\s*'  # 修飾子
+        rf'^[ \t]*'                                            # 行頭の空白（インデント対応）
+        rf'(public|protected|private|static|final|\s)*\s*'     # 修飾子
         rf'(static|final|\s)?\s*'                              # static や final
         rf'(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+'       # 戻り値の型
         rf'(?!{exclude_pattern})\w+\s*'                        # メソッド名。ただし除外キーワードは含めない
-        rf'\(.*\)\s*'                                          # 引数リスト
-        rf'(throws\s+\w+(\s*,\s*\w+)*)?\s*\{{'                 # throws と本体の開始
+        rf'\([^)]*\)'                                          # 引数リスト（`()` 内）
+        rf'(\s*\{{)'                                            # メソッド本体の開始（`{`）
     )
+    
     #method_pattern = re.compile(r'\b(public|protected|private|static|final|\s)\s+(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{')
     sb_append_pattern = re.compile(r'sb\.append\s*\(.*?[{}].*?\)')
     comment_pattern = re.compile(r'^\s*//')
@@ -78,7 +83,10 @@ class JavaFileAnalyzer:
         with open(file_path, 'r', encoding='utf-8') as file:
 
             for line_number, line in enumerate(file, 1):
-               
+
+                if file.name == "C:\\New_EQP-Care(Web)\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\jp\\co\\komatsu\\emdw\\domain\\dao\\impl\\TEMAM53DaoImpl.java":
+                    print()
+
                 # Class or Interface Detection
                 if not (in_class_scope) and self.class_pattern.search(line):
                     in_class_scope = True
@@ -103,15 +111,15 @@ class JavaFileAnalyzer:
                     # Function Detection using `{` split to get function signature
                     if in_class_scope and self.method_pattern.search(line) and not(checkMethod):
                         
-                        checkExclude = False
+                        # checkExclude = False
                         function_signature = line.strip().split('{')[0].strip()
-                        for key in self.EXCLUDE_KEYWORDS:
-                            if key == function_signature.split('(')[0].split()[-1]:
-                                checkExclude = True
-                                break
+                        # for key in self.EXCLUDE_KEYWORDS:
+                        #     if key == function_signature.split('(')[0].split()[-1]:
+                        #         checkExclude = True
+                        #         break
 
-                        if checkExclude:
-                            continue
+                        # if checkExclude:
+                        #     continue
 
                         function_obj = FunctionInfo(file.name,className,function_signature, line_number, None)
                         stack.append(function_obj)
@@ -178,14 +186,16 @@ def analyze_java_files_in_directory(directory_path,targetName):
 
     return analyzer.get_functions()
     
-def call(directory_path,baseURL):
-
-    targetName=directory_path.replace(baseURL,"").replace("\\","_") 
-    
-    functions = analyze_java_files_in_directory(directory_path,targetName)
-    for func in functions:
-        print(func)
-    return directory_path
+def call(directory_path, baseURL):
+    try:
+        targetName = directory_path.replace(baseURL, "").replace("\\", "_")
+        functions = analyze_java_files_in_directory(directory_path, targetName)
+        for func in functions:
+            print(func)
+        return directory_path
+    except Exception as e:
+        print(f"Error processing {directory_path}: {e}")
+        return None
 
 def runParalell(directory_path):
 
@@ -204,19 +214,19 @@ def runParalell(directory_path):
 
 
 
-    with ProcessPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = []
         for entry in os.scandir(directory_path):
             if entry.is_dir(): 
                 folder_path = entry.path
-                futures.append(executor.submit(call,folder_path, baseURL))                
+                futures.append(executor.submit(call, folder_path, baseURL))  # 非同期タスクを送信
 
+        # 結果を取得
         for future in concurrent.futures.as_completed(futures):
             try:
-                result = future.result()
+                result = future.result()  # 結果を取得し、エラーを処理
             except Exception as e:
-                print(f"Error processing folder: {e}")    
-
+                print(f"Error processing folder: {e}")   
 
 if __name__ == "__main__":
 
