@@ -9,7 +9,8 @@ import concurrent
 #current datetime
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
-baseURL = "C:\\New_EQPBatch\\New_EQPBatch\\emdw-batch\\src\\"
+#baseURL = "C:\\New_EQPBatch\\New_EQPBatch\\emdw-batch\\src\\"
+baseURL = "C:\\New_EQP-Care(Web)\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 #baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
 class FunctionInfo:
@@ -84,103 +85,97 @@ class JavaFileAnalyzer:
         with open(file_path, 'r', encoding='utf-8') as file:
 
             for line_number, line in enumerate(file, 1):
+                
+                # Class or Interface Detection
+                if not (in_class_scope) and self.class_pattern.search(line):
+                    in_class_scope = True
+                    className = line.strip().split('{')[0].strip()
+                    continue                    
 
-                if file.name == "C:\\New_EQP-Care(Web)\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\jp\\co\\komatsu\\emdw\\domain\\dao\\impl\\TEMAM53DaoImpl.java":
-                    print()
+                if not(in_comment_scope) and line.strip().startswith("/*") and not(line.strip().endswith("*/")):
+                    in_comment_scope = True
 
-                    # Class or Interface Detection
-                    if not (in_class_scope) and self.class_pattern.search(line):
-                        in_class_scope = True
-                        className = line.strip().split('{')[0].strip()
-                        continue                    
+                if in_comment_scope and line.strip().endswith("*/"):
+                    in_comment_scope = False
+                    continue
 
-                    if not(in_comment_scope) and line.strip().startswith("/*") and not(line.strip().endswith("*/")):
-                        in_comment_scope = True
-
-                    if in_comment_scope and line.strip().endswith("*/"):
-                        in_comment_scope = False
+                if not(in_comment_scope):
+                    # Skip Comment
+                    if self.comment_pattern.search(line):
                         continue
 
-                    if not(in_comment_scope):
-                        # Skip Comment
-                        if self.comment_pattern.search(line):
-                            continue
+                    # skip if "{}" is included in sb.append
+                    if self.sb_append_pattern.search(line):
+                        continue
 
-                        # skip if "{}" is included in sb.append
-                        if self.sb_append_pattern.search(line):
-                            continue
-
-                        # Function Detection using `{` split to get function signature
-                        if in_class_scope and self.method_pattern.search(line) and not(checkMethod):
-                            
-                            # checkExclude = False
-                            function_signature = line.strip().split('{')[0].strip()
-                            # for key in self.EXCLUDE_KEYWORDS:
-                            #     if key == function_signature.split('(')[0].split()[-1]:
-                            #         checkExclude = True
-                            #         break
-
-                            # if checkExclude:
-                            #     continue
-
-                            function_obj = FunctionInfo(file.name,className,function_signature, line_number, None)
-                            stack.append(function_obj)
-
-                        elif in_class_scope and self.method_partial_pattern.search(line)  and not(checkMethod):
-                            checkMethod=True
-                            checkOpenPath=False
-                            checkClosePath=False
-                            tmpFunction_signature = line.strip()
-                            tmpline_number = line_number
+                    # Function Detection using `{` split to get function signature
+                    if in_class_scope and self.method_pattern.search(line) and not(checkMethod):
                         
-                        if checkMethod:
-                            if line.find("(")!=-1:                        
-                                checkOpenPath = True
+                        # checkExclude = False
+                        function_signature = line.strip().split('{')[0].strip()
+                        # for key in self.EXCLUDE_KEYWORDS:
+                        #     if key == function_signature.split('(')[0].split()[-1]:
+                        #         checkExclude = True
+                        #         break
 
-                            if line.find(")")!=-1:                        
-                                checkClosePath = True
+                        # if checkExclude:
+                        #     continue
 
-                            if line.strip().find("{")!=-1:                        
-                                if (checkOpenPath and checkClosePath) and self.method_pattern.search(tmpFunction_signature + line):                                        
-                                    function_signature = tmpFunction_signature + line.strip().split('{')[0].strip()
-                                    function_obj = FunctionInfo(file.name,className,function_signature, tmpline_number, None)
-                                    stack.append(function_obj)
-                                    checkMethod=False
-                                    continue                                    
+                        function_obj = FunctionInfo(file.name,className,function_signature, line_number, None)
+                        stack.append(function_obj)
 
-                                else:
-                                    checkMethod=False
-                                    tmpFunction_signature = ""
-                                    continue
-                                    
-                            if line.strip().endswith(";"):
+                    elif in_class_scope and self.method_partial_pattern.search(line)  and not(checkMethod):
+                        checkMethod=True
+                        checkOpenPath=False
+                        checkClosePath=False
+                        tmpFunction_signature = line.strip()
+                        tmpline_number = line_number
+                    
+                    if checkMethod:
+                        if line.find("(")!=-1:                        
+                            checkOpenPath = True
+
+                        if line.find(")")!=-1:                        
+                            checkClosePath = True
+
+                        if line.strip().find("{")!=-1:                        
+                            if (checkOpenPath and checkClosePath) and self.method_pattern.search(tmpFunction_signature + line):                                        
+                                function_signature = tmpFunction_signature + line.strip().split('{')[0].strip()
+                                function_obj = FunctionInfo(file.name,className,function_signature, tmpline_number, None)
+                                stack.append(function_obj)
+                                checkMethod=False
+                                continue                                    
+
+                            else:
                                 checkMethod=False
                                 tmpFunction_signature = ""
                                 continue
-                            else:
-                                tmpFunction_signature += line.strip()                        
-                        
-                        # Count opening braces `{` in the line                    
-                        opening_braces = line.count('{')
-                        for _ in range(opening_braces):
-                            if in_class_scope and  self.method_pattern.search(line):
-                                continue  # メソッドの `{` はすでに処理済み
-                            dummy_stack.append('{')
+                                
+                        if line.strip().endswith(";"):
+                            checkMethod=False
+                            tmpFunction_signature = ""
+                            continue
+                        else:
+                            tmpFunction_signature += line.strip()                        
+                    
+                    # Count opening braces `{` in the line                    
+                    opening_braces = line.count('{')
+                    for _ in range(opening_braces):
+                        if in_class_scope and  self.method_pattern.search(line):
+                            continue  # メソッドの `{` はすでに処理済み
+                        dummy_stack.append('{')
 
-                        # Count closing braces `}` in the line
-                        closing_braces = line.count('}')
-                        for _ in range(closing_braces):
-                            if dummy_stack:
-                                dummy_stack.pop()
-                            elif stack:
-                                function_obj = stack.pop()
-                                function_obj.end_line = line_number
-                                self.functions.append(function_obj)
-                            else:
-                                in_class_scope = False  # クラススコープ終了
-            except Exception as e:
-                print(f"Error processing  {e}")
-
+                    # Count closing braces `}` in the line
+                    closing_braces = line.count('}')
+                    for _ in range(closing_braces):
+                        if dummy_stack:
+                            dummy_stack.pop()
+                        elif stack:
+                            function_obj = stack.pop()
+                            function_obj.end_line = line_number
+                            self.functions.append(function_obj)
+                        else:
+                            in_class_scope = False  # クラススコープ終了
 
     def get_functions(self):
         return self.functions

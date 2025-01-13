@@ -127,13 +127,6 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
         else:
             tmpFileName = callFunc['fileName'] 
         
-
-
-        # if tmpFileName == "EMDW0403Action":
-        #     print()
-        # else:
-        #     continue
-
         #Function-SQL
         filtered_SQL = [item for item in importList_SQL if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item['fileName'])]
 
@@ -220,6 +213,9 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
 
             for data_detail in filtered_data_detail:
                 matches = extract_nested_functions(data_detail["line"],function_pattern)            
+
+                if tmpFileName == "EMDW0403Action":
+                    print()
 
                 if len(matches) > 0 and len(tmpFunctionList) > 0:
                     
