@@ -311,7 +311,6 @@ def writeItem(processDict,resultList,importList_SQL):
                 tmpClass = processValue['fileName']            
             print(f"col:{calCol}/row:{calRow} {processValue['function']}")
 
-            calCol+=1        
             ws.cell(row=calRow, column=calCol, value=f"{processValue['function']}")
             calRow = writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,processValue['function'])
 
@@ -341,9 +340,6 @@ def writeItem(processDict,resultList,importList_SQL):
 
 def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,exValue):
 
-        if exValue =="findDET901ByCreDate_DetDaoImpl":
-            print()
-
         filteredDict = {tkey:tvalue for tkey,tvalue in resultList.items() if tkey[0] == processKey}
         tmpCalRow=calRow
         cnt = 0
@@ -351,8 +347,9 @@ def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,ex
         if len(filteredDict)==0 :
             return(tmpCalRow)
         else:
-         
+            
             tmpCalCol=calCol + 1
+            recCountMax = len(filteredDict)
             for key,value in filteredDict.items():
 
                 exKeyList = exValue.split("$")
@@ -361,6 +358,12 @@ def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,ex
                         continue
                     else:
                         exValue += "$"+value[1]                
+
+                if value[1] == "init_AngloMachineSender":
+                    print()
+
+                if value[1] == "findAngroMachine_AngloMachineDao":
+                    print()
 
                 cnt+=1
                 ws.cell(row=tmpCalRow, column=tmpCalCol, value=f"{value[1]}")
@@ -371,7 +374,8 @@ def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,ex
                     ws.cell(row=tmpCalRow, column=SQLID_COL, value=value[1])
                     ws.cell(row=tmpCalRow, column=SQL_COL, value=[item["SQL"] for item in importList_SQL if item['funcition'] == value[1]][0])
 
-                ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key[1],resultList,importList_SQL,exValue)            
+                ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key[1],resultList,importList_SQL,exValue)   
+
                 tmpCalRow=ret+1                
                 
         return(tmpCalRow)
