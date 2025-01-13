@@ -126,6 +126,10 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
             continue
         else:
             tmpFileName = callFunc['fileName'] 
+
+        # if tmpFileName != "EMDW0403Action":
+        #    continue
+
         
         #Function-SQL
         filtered_SQL = [item for item in importList_SQL if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item['fileName'])]
@@ -164,8 +168,9 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
             
                 if len(matches) > 0:
                     
-                    if tmpFileName == "EMDW0101Action":
-                        print() 
+                    # if tmpFileName == "EMDW0403Action":
+                    #     print() 
+
 
                     for match in matches:
                         caller_function_name = ""
@@ -214,8 +219,8 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
             for data_detail in filtered_data_detail:
                 matches = extract_nested_functions(data_detail["line"],function_pattern)            
 
-                if tmpFileName == "EMDW0403Action":
-                    print()
+                # if tmpFileName == "EMDW0403Action":
+                #     print()
 
                 if len(matches) > 0 and len(tmpFunctionList) > 0:
                     
@@ -296,6 +301,7 @@ def writeItem(processDict,resultList,importList_SQL):
         ws.cell(row=calRow, column=SQL_COL, value=f"SQL")
 
         tmpClass = ""
+        calCol+=1
             
         for processKey,processValue in processDict.items():
 
@@ -306,6 +312,7 @@ def writeItem(processDict,resultList,importList_SQL):
                 ws.cell(row=calRow, column=calCol, value=f"{processValue['fileName']}")
                 tmpClass = processValue['fileName']            
             print(f"col:{calCol}/row:{calRow} {processValue['function']}")
+            calCol+=1
 
             ws.cell(row=calRow, column=calCol, value=f"{processValue['function']}")
             calRow = writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,processValue['function'])
@@ -355,12 +362,6 @@ def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,ex
                     else:
                         exValue += "$"+value[1]                
 
-                if value[1] == "init_AngloMachineSender":
-                    print()
-
-                if value[1] == "findAngroMachine_AngloMachineDao":
-                    print()
-
                 cnt+=1
                 ws.cell(row=tmpCalRow, column=tmpCalCol, value=f"{value[1]}")
 
@@ -373,6 +374,7 @@ def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,ex
                 ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key[1],resultList,importList_SQL,exValue)   
 
                 tmpCalRow=ret+1                
+                
                 
         return(tmpCalRow)
 

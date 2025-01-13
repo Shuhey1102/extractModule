@@ -87,10 +87,15 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
 
                         if not(line.strip().startswith("import")) and havetoSerch2:                        
                             class_pattern = "|".join(re.escape(item) for item in serchVal)
-                            pattern =  rf"({class_pattern})\s+(\w+)\s+="
+                            pattern =  rf"({class_pattern})\s+(\w+);"
                             for match in re.finditer(pattern, line.strip()):                            
                                 details.append([match.group(1),match.group(2)])
 
+                        if not(line.strip().startswith("import")) and havetoSerch2:                        
+                            class_pattern = "|".join(re.escape(item) for item in serchVal)
+                            pattern =  rf"({class_pattern})\s+(\w+)\s+="
+                            for match in re.finditer(pattern, line.strip()):                            
+                                details.append([match.group(1),match.group(2)])
                     
     except Exception as e:
         raise Exception(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
