@@ -87,10 +87,10 @@ class JavaFileAnalyzer:
 
             for line_number, line in enumerate(file, 1):
                 
-                if file.name == "C:\\New_EQPBatch\\New_EQPBatch\\emdw-batch\\src\\jp\\co\\komatsu\\emdw\\batch\\anglo\\dao\\AngloMachineDao.java":
-                    print()
-                else:
-                    continue
+                # if file.name == "C:\\New_EQPBatch\\New_EQPBatch\\emdw-batch\\src\\jp\\co\\komatsu\\emdw\\batch\\anglo\\dao\\AngloMachineDao.java":
+                #     print()
+                # else:
+                #     continue
 
                 # Class or Interface Detection
                 if not (in_class_scope) and self.class_pattern.search(line):
