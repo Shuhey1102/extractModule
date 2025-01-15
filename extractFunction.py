@@ -44,29 +44,30 @@ class JavaFileAnalyzer:
     class_pattern = re.compile(r'\b(public\s+)?(final\s+)?(class|interface)\s+\w+')
     #method_partial_pattern = re.compile(r'\b(public|protected|private|static|final|\s)*\s*(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*')
     #method_partial_pattern = re.compile(r'\b(public|protected|private|static|final|\s)\s+(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*')
-    method_partial_pattern = re.compile(
-        rf'^[ \t]*'                                            # 行頭の空白（インデント対応）
-        rf'(public|protected|private|static|final|\s)*\s*'     # 修飾子
-        rf'(static|final|\s)?\s*'                              # static や final
-        rf'(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+'       # 戻り値の型
-        rf'(?!{exclude_pattern})\w+\s*'                        # メソッド名。ただし除外キーワードは含めない
-        rf'\([^)]*\)'                                          # 引数リスト（`()` 内）
-        rf'(\s*throws\s+\w+(\s*,\s*\w+)*)?'                    # `throws` 節
-        rf'\s*(\{{|\}})'                                       # 開始 `{` または終了 `}`
-    )
+    # method_partial_pattern = re.compile(
+    #     rf'^[ \t]*'                                            # 行頭の空白（インデント対応）
+    #     rf'(public|protected|private|static|final|\s)*\s*'     # 修飾子
+    #     rf'(static|final|\s)?\s*'                              # static や final
+    #     rf'(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+'       # 戻り値の型
+    #     rf'(?!{exclude_pattern})\w+\s*'                        # メソッド名。ただし除外キーワードは含めない
+    #     rf'\([^)]*'  
+    # )
+    method_partial_pattern = re.compile(r'^[ \t]*(public|protected|private|static|final|\s)*\s*(static|final|\s)?\s*(\w+(\[\])?|\w+<([^<>]*(?:<[^<>]*>[^<>]*)*)>)\s+(?!{exclude_pattern})\w+\s*\([^)]*')
 
-    #method_pattern = re.compile(r'\b(public|protected|private|static|final|\s)*\s*(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{')
-    method_pattern = re.compile(
-        rf'^[ \t]*'
-        rf'(public|protected|private|static|final|\s)*\s*'
-        rf'(static|final|\s)?\s*'
-        rf'(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+'
-        rf'(?!{exclude_pattern})\w+\s*'
-        rf'\([^)]*\)'
-        rf'(\s*throws\s+\w+(\s*,\s*\w+)*)?'
-        rf'\s*\{{'
-    )
     #method_pattern = re.compile(r'\b(public|protected|private|static|final|\s)\s+(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{')
+    #method_pattern = re.compile(r'\b(public|protected|private|static|final|\s)*\s*(static|final|\s)?\s*(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+\w+\s*\(.*\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{')
+    # method_pattern = re.compile(
+    #     rf'^[ \t]*'
+    #     rf'(public|protected|private|static|final|\s)*\s*'
+    #     rf'(static|final|\s)?\s*'
+    #     rf'(\w+(\[\])?|\w+<(\?|(\w+(\s*,\s*\w+)*))>)\s+'
+    #     rf'(?!{exclude_pattern})\w+\s*'
+    #     rf'\([^)]*\)'
+    #     rf'(\s*throws\s+\w+(\s*,\s*\w+)*)?'
+    #     rf'\s*\{{'
+    # )
+    method_pattern = re.compile(r'^[ \t]*(public|protected|private|static|final|\s)*\s*(static|final|\s)?\s*(\w+(\[\])?|\w+<([^<>]*(?:<[^<>]*>[^<>]*)*)>)\s+(?!{exclude_pattern})\w+\s*\([^)]*\)(\s*throws\s+\w+(\s*,\s*\w+)*)?\s*\{')
+
     sb_append_pattern = re.compile(r'sb\.append\s*\(.*?[{}].*?\)')
     comment_pattern = re.compile(r'^\s*//')
     
@@ -86,6 +87,11 @@ class JavaFileAnalyzer:
 
             for line_number, line in enumerate(file, 1):
                 
+                if file.name == "C:\\New_EQPBatch\\New_EQPBatch\\emdw-batch\\src\\jp\\co\\komatsu\\emdw\\batch\\anglo\\dao\\AngloMachineDao.java":
+                    print()
+                else:
+                    continue
+
                 # Class or Interface Detection
                 if not (in_class_scope) and self.class_pattern.search(line):
                     in_class_scope = True
