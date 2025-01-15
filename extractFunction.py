@@ -234,9 +234,11 @@ def runParalell(directory_path):
         futures = []
         for entry in os.scandir(directory_path):
             if entry.is_dir(): 
-                folder_path = entry.path
-                futures.append(executor.submit(call, folder_path, baseURL))  # 非同期タスクを送信
-
+                for entry2 in os.scandir(entry.path):
+                    if entry2.is_dir(): 
+                        folder_path = entry2.path
+                        futures.append(executor.submit(call, folder_path, baseURL))  # 非同期タスクを送信                folder_path = entry.path
+              
         # 結果を取得
         for future in concurrent.futures.as_completed(futures):
             try:

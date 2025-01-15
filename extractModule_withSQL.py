@@ -74,10 +74,18 @@ def process_folder(dirname ,folder_path, keywords):
 
 def main():
     # 検索対象のフォルダパスを指定
-    sql_dir = input("SQLの抽出フォルダ: ")
+    sql_dir = input("SQLの抽出フォルダ(emdw): ")
 
     # キーワードリストを直接指定
     keywords = extractSQL_lib.runExtractSQL(sql_dir,r"<component name=\"(.*?)\"(.*?)>(.*?)</component>")
+
+
+    # 検索対象のフォルダパスを指定
+    sql_dir = input("SQLの抽出フォルダ(mkmw)(set n if you want to skip): ")
+
+    if sql_dir.upper() != "N":
+        # キーワードリストを直接指定
+        keywords.extend(extractSQL_lib.runExtractSQL(sql_dir,r"<component name=\"(.*?)\"(.*?)>(.*?)</component>"))
 
     # while(True):
     #     isEnd = input("他に追加すべき検索キーワードがありますか？(y:n): ")
