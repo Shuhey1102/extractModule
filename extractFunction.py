@@ -9,8 +9,8 @@ import concurrent
 #current datetime
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
-#baseURL = "C:\\New_EQPBatch\\New_EQPBatch\\emdw-batch\\src\\"
-baseURL = "C:\\New_EQP-Care(Web)\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+baseURL = "C:\\New_EQPBatch\\New_EQPBatch\\kpi-batch\\src\\"
+#baseURL = "C:\\New_EQP-Care(Web)\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 #baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
 class FunctionInfo:

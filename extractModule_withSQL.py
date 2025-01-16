@@ -23,12 +23,12 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
     # 結果を格納するリスト
     results = []
 
-    daoFunction = ["setDiconDir","pagerSelectSQL","selectSQL","updateSQL","selectOrderSQL","selectSQLReplace","replaceSqlKpiTableId","getDiconPath","removeBlankRow","setLocator"]
+    daoFunction = ["extractModule_withSQL.py","pagerSelectSQL","selectSQL","updateSQL","selectOrderSQL","selectSQLReplace","replaceSqlKpiTableId","getDiconPath","removeBlankRow","setLocator"]
  
     # 正規表現の作成
     dao_pattern = "|".join(re.escape(func) for func in daoFunction)
     sql_pattern = "|".join(re.escape(sql[3]) for sql in keywords)
-    regex_pattern = rf"({dao_pattern})\(\"({sql_pattern})\".*?"
+    regex_pattern = rf"({dao_pattern})\(\"({sql_pattern})\".*?|({dao_pattern})\(Component\.({sql_pattern}.*?)"
 
     # フォルダ内の全てのファイルを走査
     for dirpath, _, filenames in os.walk(folder_path):
@@ -48,10 +48,16 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
 
                         for match in re.finditer(regex_pattern, line.strip()):                            
                             
-                            sqlStatement = [item[4] for item in keywords if item[3] == match.group(2)][0]
+                            if "(Component."in match.group(0): 
+                                sqlStatement = [item[4] for item in keywords if item[3] == match.group(4)][0]
+                                # 一致した場合、結果に追加
+                                results.append([filename, dirpath, match.group(4), line.strip(),match.group(4), line_number,sqlStatement])
 
+                            else:
+                                sqlStatement = [item[4] for item in keywords if item[3] == match.group(2)][0]
                             # 一致した場合、結果に追加
-                            results.append([filename, dirpath, match.group(2), line.strip(),match.group(2), line_number,sqlStatement])
+                                results.append([filename, dirpath, match.group(2), line.strip(),match.group(2), line_number,sqlStatement])
+
 
             except Exception as e:
                 print(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
