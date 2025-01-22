@@ -27,17 +27,18 @@ def search_files_in_directory(root_dir, pattern):
             file_path = os.path.join(dirpath, filename)
 
             try:
-                # ファイルを開いて内容を読み込む
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    file_content = file.read()
+                if file_path.endwith(".sql"):
+                    # ファイルを開いて内容を読み込む
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        file_content = file.read()
 
-                # ファイルの中身が正規表現に一致する場合
-                matches = regex.findall(file_content)
-                # matches = regex.findall(file_content.replace("\n",""))
+                    # # ファイルの中身が正規表現に一致する場合
+                    # matches = regex.findall(file_content)
+                    # # matches = regex.findall(file_content.replace("\n",""))
 
-                # 一致があれば結果に追加
-                for match in matches:
-                    results.append([filename, dirpath, match[0],match[2]])
+                    # # 一致があれば結果に追加
+                    # for match in matches:
+                    results.append([filename, dirpath, filename,file_content])
 
             except Exception as e:
                 print(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
