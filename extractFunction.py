@@ -87,8 +87,9 @@ class JavaFileAnalyzer:
 
             for line_number, line in enumerate(file, 1):
                 
-                # if file.name == "C:\\New_EQPBatch\\New_EQPBatch\\emdw-batch\\src\\jp\\co\\komatsu\\emdw\\batch\\anglo\\dao\\AngloMachineDao.java":
-                #     print()
+                # if file.name == "C:\\New_EQPBatch\\New_EQPBatch\\kpi-batch\\src\\jp\\co\\komatsu\\emdw\\batch\\kpi\\dao\\TEMAKSummaryCreateDao.java":
+                #     if line_number > 314:
+                #         print()
                 # else:
                 #     continue
 
@@ -134,6 +135,7 @@ class JavaFileAnalyzer:
                         checkMethod=True
                         checkOpenPath=False
                         checkClosePath=False
+                        firstCheck=True
                         tmpFunction_signature = line.strip()
                         tmpline_number = line_number
                     
@@ -145,7 +147,7 @@ class JavaFileAnalyzer:
                             checkClosePath = True
 
                         if line.strip().find("{")!=-1:                        
-                            if (checkOpenPath and checkClosePath) and self.method_pattern.search(tmpFunction_signature + line):                                        
+                            if (checkOpenPath and checkClosePath) and self.method_pattern.search(tmpFunction_signature + ' ' +line.strip()):                                        
                                 function_signature = tmpFunction_signature + line.strip().split('{')[0].strip()
                                 function_obj = FunctionInfo(file.name,className,function_signature, tmpline_number, None)
                                 stack.append(function_obj)
@@ -155,14 +157,16 @@ class JavaFileAnalyzer:
                             else:
                                 checkMethod=False
                                 tmpFunction_signature = ""
-                                continue
                                 
                         if line.strip().endswith(";"):
                             checkMethod=False
                             tmpFunction_signature = ""
                             continue
                         else:
-                            tmpFunction_signature += line.strip()                        
+                            if firstCheck:
+                                firstCheck=False
+                            else:
+                                tmpFunction_signature += ' ' + line.strip()                        
                     
                     # Count opening braces `{` in the line                    
                     opening_braces = line.count('{')

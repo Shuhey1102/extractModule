@@ -23,11 +23,11 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
     # 結果を格納するリスト
     results = []
 
-    daoFunction = ["extractModule_withSQL.py","pagerSelectSQL","selectSQL","updateSQL","selectOrderSQL","selectSQLReplace","replaceSqlKpiTableId","getDiconPath","removeBlankRow","setLocator"]
+    daoFunction = ["extractModule_withSQL.py","pagerSelectSQL","selectSQL","updateSQL","selectOrderSQL","selectSQLReplace","replaceSqlKpiTableId","getDiconPath","removeBlankRow","setLocator","updateSQLReplace"]
  
     # 正規表現の作成
     dao_pattern = "|".join(re.escape(func) for func in daoFunction)
-    sql_pattern = "|".join(re.escape(sql[3]) for sql in keywords)
+    sql_pattern = "|".join(re.escape(sql[2]) for sql in keywords)
     regex_pattern = rf"({dao_pattern})\(\"({sql_pattern})\".*?|({dao_pattern})\(Component\.({sql_pattern}.*?)"
 
     # フォルダ内の全てのファイルを走査
@@ -49,12 +49,12 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
                         for match in re.finditer(regex_pattern, line.strip()):                            
                             
                             if "(Component."in match.group(0): 
-                                sqlStatement = [item[4] for item in keywords if item[3] == match.group(4)][0]
+                                sqlStatement = [item[3] for item in keywords if item[2] == match.group(4)][0]
                                 # 一致した場合、結果に追加
                                 results.append([filename, dirpath, match.group(4), line.strip(),match.group(4), line_number,sqlStatement])
 
                             else:
-                                sqlStatement = [item[4] for item in keywords if item[3] == match.group(2)][0]
+                                sqlStatement = [item[3] for item in keywords if item[2] == match.group(2)][0]
                             # 一致した場合、結果に追加
                                 results.append([filename, dirpath, match.group(2), line.strip(),match.group(2), line_number,sqlStatement])
 

@@ -37,8 +37,7 @@ def search_files_in_directory(root_dir, pattern):
                 # matches = regex.findall(file_content.replace("\n",""))
 
                 # 一致があれば結果に追加0
-                for match in matches:
-                    
+                for match in matches:                    
                     results.append([filename, dirpath, match[0],match[2]])
 
             except Exception as e:

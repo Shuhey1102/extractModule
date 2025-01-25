@@ -8,6 +8,7 @@ import concurrent
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
+from collections import OrderedDict
 
 #current datetime
 dt_now = datetime.datetime.now()
@@ -127,18 +128,17 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
         else:
             tmpFileName = callFunc['fileName'] 
 
-        # if tmpFileName != "EMDW0403Action":
+        # if tmpFileName != "TEMAKSummaryCreateDao":
         #    continue
-
         
         #Function-SQL
-        filtered_SQL = [item for item in importList_SQL if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item['fileName'])]
+        filtered_SQL = [item for item in importList_SQL if str.upper(callFunc["fileNameFull"]) == str.upper(item["ParentPath"]+"\\"+item['fileName'])]
 
         for data_SQL in filtered_SQL:
 
             caller_function_name = ""
             #Check Caller Func
-            for callerFunction in  [item for item in targetProcess if item['fileName'] == callFunc['fileName']and item["fileNameFull"]==callFunc["fileNameFull"]] :                   
+            for callerFunction in  [item for item in targetProcess if str.upper(item['fileName']) == str.upper(callFunc['fileName']) and str.upper(item["fileNameFull"]) == str.upper(callFunc["fileNameFull"])] :                   
                 if int(callerFunction["startNum"]) <= int(data_SQL["colNum"]) <= int(callerFunction["endNum"]):
                     caller_function_name = callerFunction['function']
                     break
@@ -146,7 +146,7 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
             if caller_function_name == "":
                 continue
             
-            parentKey = caller_function_name + "_" + callFunc["fileNameFull"]
+            parentKey = str.upper(callFunc["fileNameFull"] + "_" + caller_function_name)
             childKey = data_SQL['funcition'] + "_" + "SQL"
             
             if (parentKey,childKey) in retDist :
@@ -158,19 +158,26 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
 
         #Function-Function(self)
         tmpFunctionList=[]
-        tmpFunctionList = [item for item in targetProcess if (item["fileNameFull"] == callFunc["fileNameFull"] )]
+        tmpFunctionList = [item for item in targetProcess if (str.upper(item["fileNameFull"]) == str.upper(callFunc["fileNameFull"]) )]
         function_pattern = "|".join(map(re.escape, [item['function'] for item in tmpFunctionList]))
+        in_comment_scope = False
 
         with open(callFunc["fileNameFull"], 'r', encoding='utf-8') as file:
             for line_number, line in enumerate(file, 1):
 
                 matches = extract_self_functions(line,function_pattern)            
-            
-                if len(matches) > 0:
-                    
-                    # if tmpFileName == "EMDW0403Action":
-                    #     print() 
 
+                if not(in_comment_scope) and line.strip().startswith("/*") and not(line.strip().endswith("*/")):
+                    in_comment_scope = True
+
+                if in_comment_scope and line.strip().endswith("*/"):
+                    in_comment_scope = False
+                    continue
+
+                if not(in_comment_scope) and len(matches) > 0:
+                    
+                    # if tmpFileName != "TEMAKSummaryCreateDao":
+                    #     continue
 
                     for match in matches:
                         caller_function_name = ""
@@ -188,8 +195,8 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                         if caller_function_name == "":
                             continue
                         
-                        parentKey = caller_function_name + "_" + callFunc["fileNameFull"]
-                        childKey = callee_function_name + "_" + callFunc["fileNameFull"]
+                        parentKey = str.upper(callFunc["fileNameFull"] + "_" + caller_function_name)
+                        childKey = str.upper(callFunc["fileNameFull"] + "_" + callee_function_name)
                         
                         if (parentKey,childKey) in retDist :
                             continue
@@ -199,7 +206,7 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
 
         #Function-Function
         colNum=5
-        filtered_data_header = [item for item in importList_header if callFunc["fileNameFull"] == (item["ParentPath"]+"\\"+item['fileName'])]        
+        filtered_data_header = [item for item in importList_header if str.upper(callFunc["fileNameFull"]) == str.upper(item["ParentPath"]+"\\"+item['fileName'])]        
 
         for data_header in filtered_data_header:
             
@@ -207,19 +214,19 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
             if data_header["line"].startswith("//") or data_header["line"].startswith("/*"):
                 continue
             calleeKey = ".".join(data_header["line"].replace("import","").replace(";","").strip().split(".")[:colNum])
-            tmpFunctionList = [item for item in processdict[calleeKey] if (item['fileName'] == data_header['funcition'] or item['fileName'] == (data_header['funcition'] + "Impl"))]
+            tmpFunctionList = [item for item in processdict[calleeKey] if (str.upper(item['fileName']) == str.upper(data_header['funcition']) or str.upper(item['fileName']) == str.upper(data_header['funcition'] + "Impl"))]
 
             function_pattern = "|".join(map(re.escape, [item['function'] for item in tmpFunctionList]))
 
 
             filtered_data_detail = [item for item in importList_detail 
-                                        if item['fileName']==data_header['fileName'] and item["ParentPath"]==data_header["ParentPath"] and item['funcition']==data_header['funcition']
+                                        if str.upper(item['fileName'])==str.upper(data_header['fileName']) and str.upper(item["ParentPath"])==str.upper(data_header["ParentPath"]) and str.upper(item['funcition'])==str.upper(data_header['funcition'])
                                         and not(item["line"].strip().startswith("//")) and not(item["line"].strip().startswith("/*"))]     
 
             for data_detail in filtered_data_detail:
                 matches = extract_nested_functions(data_detail["line"],function_pattern)            
 
-                # if tmpFileName == "EMDW0403Action":
+                # if tmpFileName == "TEMAKSummaryCreateService":
                 #     print()
 
                 if len(matches) > 0 and len(tmpFunctionList) > 0:
@@ -235,7 +242,7 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                         callee_class_name = [item['fileName'] for item in tmpFunctionList if item['function'] == callee_function_name][0]        
         
                         #Check Caller Func
-                        for callerFunction in  [item for item in targetProcess if item['fileName'] == callFunc['fileName']and item["fileNameFull"]==callFunc["fileNameFull"]] :                   
+                        for callerFunction in  [item for item in targetProcess if str.upper(item['fileName']) == str.upper(callFunc['fileName']) and str.upper(item["fileNameFull"]) == str.upper(callFunc["fileNameFull"])] :                   
                             if int(callerFunction["startNum"]) <= int(data_detail["colNum"]) <= int(callerFunction["endNum"]):
                                 caller_function_name = callerFunction['function']
                                 break
@@ -243,8 +250,8 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                         if caller_function_name == "":
                             continue
 
-                        parentKey = caller_function_name + "_" + callFunc["fileNameFull"]
-                        childKey = callee_function_name + "_" + [item["fileNameFull"] for item in tmpFunctionList if item['function'] == callee_function_name][0]
+                        parentKey =  str.upper(callFunc["fileNameFull"] + "_" +caller_function_name)
+                        childKey = str.upper([item["fileNameFull"] for item in tmpFunctionList if str.upper(item['function']) == str.upper(callee_function_name)][0] + "_" + callee_function_name)
                         
                         if (parentKey,childKey) in retDist :
                             continue
@@ -314,6 +321,9 @@ def writeItem(processDict,resultList,importList_SQL):
             print(f"col:{calCol}/row:{calRow} {processValue['function']}")
             calCol+=1
 
+            if tmpClass == "TEMAKSummaryCreate.java":
+                print()
+
             ws.cell(row=calRow, column=calCol, value=f"{processValue['function']}")
             calRow = writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,processValue['function'])
 
@@ -354,6 +364,9 @@ def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,ex
             tmpCalCol=calCol + 1
             recCountMax = len(filteredDict)
             for key,value in filteredDict.items():
+                
+                # if value[1] == "getDeleteSql_TEMAKSummaryCreateDao":
+                #     print()
 
                 exKeyList = exValue.split("$")
                 if len(exKeyList) > 0:
@@ -442,9 +455,11 @@ def runParalell(directory_path,importList_header,importList_detail,importList_SQ
         for resultKey,resultValue in resultList.items():
             if not(any(resultKey[0] == key[1]  for key in resultList.keys())) and not(resultValue[2]):
                 if not(resultKey[0] in processDict):
-                    processDict[resultKey[0]] = {"function":resultValue[0],"fileName":resultKey[0].split("\\")[-1]}                    
+                    # processDict[resultKey[0]] = {"function":resultValue[0],"fileName":resultKey[0].split("\\")[-1]}
+                    processDict[resultKey[0]] = {"function":resultValue[0],"fileName":resultValue[0].split("_")[-1]+".java"}
             writer.writerow([resultKey[0],resultKey[1],resultValue[0],resultValue[1],resultValue[2]])
             #resultList[resultKey][2] = True                               
+        processDict = OrderedDict(sorted(processDict.items()))
         
 
     writeItem(processDict,resultList,importList_SQL)
