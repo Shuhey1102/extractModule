@@ -21,6 +21,38 @@ importList_detail = []
 SQLID_COL = 17
 SQL_COL = 18
 
+# キーワードリストを直接指定
+SQL_TARGETS_LIST = [
+    "(+)",
+    "CONCAT",
+    "CURRENT DATE",
+    "CURRENT TIME",
+    "CURRENT TIMESTAMP",
+    "DATE(",
+    "DECODE",
+    "DECODE(",
+    "FETCH FIRST ",
+    "FROM (",
+    "HOUR(",
+    "INT(",
+    "INTEGER",
+    "INTEGER(",
+    "MINUTE",
+    "MINUTE(",
+    "NVL",
+    "OPTIMIZE FOR",
+    "REPLACE",
+    "ROUND",
+    "ROWNUM",
+    "SUBSTR",
+    "TO_CHAR",
+    "TO_DATE",
+    "TRIM",
+    "TRUNC",
+    "VALUE(",
+    "||"
+]
+
 def getTimeString():
     """get Month
     Args:
@@ -113,7 +145,54 @@ def extract_nested_functions(line,function_pattern):
     
     return results
 
-def call(file_path,target,processdict,importList_header,importList_detail,importList_SQL):
+def parentWk(pair,processdict,parentPairs,line,matches,tmpFunctionList,line_number,callFunc,retDist):
+
+
+        tmpChildFolder = pair["child_folder"]
+        tmpChildPath = pair["child_path"]
+
+        tmpParentFunctionList=[]                
+        tmpParentFunctionList = [item for item in processdict[tmpChildFolder] if item["fileNameFull"] == tmpChildPath]
+        tmpParentfunction_pattern = "|".join(map(re.escape, [item['function'] for item in tmpParentFunctionList]))
+
+        matches = extract_self_functions(line,tmpParentfunction_pattern)
+        if len(matches) > 0:
+
+            for match in matches:
+                caller_function_name = ""
+                callee_function_name = ""        
+                callee_function_name = (match)
+
+                #Check Caller Func
+                for callerFunction in tmpFunctionList:                   
+                    if int(callerFunction["startNum"]) <= line_number <= int(callerFunction["endNum"]):
+                        if callerFunction['function'] == callee_function_name:
+                            continue
+                        caller_function_name = callerFunction['function']
+                        break
+
+                if match == "" or caller_function_name == "":
+                    continue
+
+                parentKey = str.upper(callFunc["fileNameFull"] + "_" + caller_function_name)
+                childKey = str.upper(callFunc["fileNameFull"] + "_" + callee_function_name)
+                
+                if (parentKey,childKey) in retDist :
+                    continue
+                
+                retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc['fileName'], callee_function_name+"_"+ callFunc['fileName'],False] #0:Function / 1:SQL
+                print(parentKey+","+childKey+","+caller_function_name+"_"+ callFunc['fileName']+","+callee_function_name+"_"+ callFunc['fileName'])
+
+        else:
+            pairList = [item for item in parentPairs if item["parent_path"] == pair["child_path"]]
+            if len(pairList) > 0:
+                for pair in pairList:
+                    parentWk(pair,processdict,parentPairs,line,matches,tmpFunctionList,line_number,callFunc,retDist)          
+            else:
+                return
+    
+
+def call(file_path,target,processdict,importList_header,importList_detail,importList_SQL,parent_path):
 
     print(f"Start call : {file_path}") 
     #callFunctions = load_csv_to_objects(file_path)
@@ -128,7 +207,7 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
         else:
             tmpFileName = callFunc['fileName'] 
 
-        # if tmpFileName != "TEMAKSummaryCreateDao":
+        # if tmpFileName != "EDWCustomerInput":
         #    continue
         
         #Function-SQL
@@ -157,10 +236,12 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
         filtered_SQL.clear()
 
         #Function-Function(self)
-        tmpFunctionList=[]
+        tmpFunctionList=[]                
         tmpFunctionList = [item for item in targetProcess if (str.upper(item["fileNameFull"]) == str.upper(callFunc["fileNameFull"]) )]
         function_pattern = "|".join(map(re.escape, [item['function'] for item in tmpFunctionList]))
+
         in_comment_scope = False
+        parentPairs = load_csv_to_objects(parent_path)[1]
 
         with open(callFunc["fileNameFull"], 'r', encoding='utf-8') as file:
             for line_number, line in enumerate(file, 1):
@@ -174,35 +255,47 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
                     in_comment_scope = False
                     continue
 
-                if not(in_comment_scope) and len(matches) > 0:
-                    
-                    # if tmpFileName != "TEMAKSummaryCreateDao":
+                if not(in_comment_scope) :
+
+                    # if tmpFileName != "EDWCustomerInput":
                     #     continue
+                    # else:
+                    #     if line_number > 125:
+                    #         print()
 
-                    for match in matches:
-                        caller_function_name = ""
-                        callee_function_name = ""        
-                        callee_function_name = (match)
-        
-                        #Check Caller Func
-                        for callerFunction in tmpFunctionList:                   
-                            if int(callerFunction["startNum"]) <= line_number <= int(callerFunction["endNum"]):
-                                if callerFunction['function'] == callee_function_name:
-                                    continue
-                                caller_function_name = callerFunction['function']
-                                break
+                    if len(matches) > 0:                        
 
-                        if caller_function_name == "":
-                            continue
-                        
-                        parentKey = str.upper(callFunc["fileNameFull"] + "_" + caller_function_name)
-                        childKey = str.upper(callFunc["fileNameFull"] + "_" + callee_function_name)
-                        
-                        if (parentKey,childKey) in retDist :
-                            continue
-                        
-                        retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc['fileName'], callee_function_name+"_"+ callFunc['fileName'],False] #0:Function / 1:SQL
-                        print(parentKey+","+childKey+","+caller_function_name+"_"+ callFunc['fileName']+","+callee_function_name+"_"+ callFunc['fileName'])
+                        for match in matches:
+                            caller_function_name = ""
+                            callee_function_name = ""        
+                            callee_function_name = (match)
+            
+                            #Check Caller Func
+                            for callerFunction in tmpFunctionList:                   
+                                if int(callerFunction["startNum"]) <= line_number <= int(callerFunction["endNum"]):
+                                    if callerFunction['function'] == callee_function_name:
+                                        continue
+                                    caller_function_name = callerFunction['function']
+                                    break
+
+                            if caller_function_name == "":
+                                continue
+                            
+                            parentKey = str.upper(callFunc["fileNameFull"] + "_" + caller_function_name)
+                            childKey = str.upper(callFunc["fileNameFull"] + "_" + callee_function_name)
+                            
+                            if (parentKey,childKey) in retDist :
+                                continue
+                            
+                            retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc['fileName'], callee_function_name+"_"+ callFunc['fileName'],False] #0:Function / 1:SQL
+                            print(parentKey+","+childKey+","+caller_function_name+"_"+ callFunc['fileName']+","+callee_function_name+"_"+ callFunc['fileName'])
+
+                    else:
+
+                        pairList = [item for item in parentPairs if callFunc["fileNameFull"] == item["parent_path"]]
+                        if len(pairList) > 0:
+                            for pair in pairList:
+                                parentWk(pair,processdict,parentPairs,line,matches,tmpFunctionList,line_number,callFunc,retDist)                            
 
         #Function-Function
         colNum=5
@@ -226,7 +319,7 @@ def call(file_path,target,processdict,importList_header,importList_detail,import
             for data_detail in filtered_data_detail:
                 matches = extract_nested_functions(data_detail["line"],function_pattern)            
 
-                # if tmpFileName == "TEMAKSummaryCreateService":
+                # if tmpFileName == "EDWCustomerInput":
                 #     print()
 
                 if len(matches) > 0 and len(tmpFunctionList) > 0:
@@ -312,6 +405,8 @@ def writeItem(processDict,resultList,importList_SQL):
             
         for processKey,processValue in processDict.items():
 
+            sqlTargetList = [] 
+            
             calRow+=1
             calCol=1
 
@@ -321,11 +416,16 @@ def writeItem(processDict,resultList,importList_SQL):
             print(f"col:{calCol}/row:{calRow} {processValue['function']}")
             calCol+=1
 
-            if tmpClass == "TEMAKSummaryCreate.java":
-                print()
+            # if tmpClass == "TEMAKSummaryCreate.java":
+            #     print()
 
             ws.cell(row=calRow, column=calCol, value=f"{processValue['function']}")
-            calRow = writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,processValue['function'])
+            calRow = writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,processValue['function'],sqlTargetList)
+
+            if len(sqlTargetList) > 0:
+                ws.cell(row=calRow, column=1, value="SQL_NG : " + ",".join(sqlTargetList))
+
+            sqlTargetList.clear()
 
             if calRow > 500000:
                 break
@@ -351,7 +451,7 @@ def writeItem(processDict,resultList,importList_SQL):
 
         procEndList.clear()
 
-def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,exValue):
+def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,exValue,sqlTargetList):
 
         filteredDict = {tkey:tvalue for tkey,tvalue in resultList.items() if tkey[0] == processKey}
         tmpCalRow=calRow
@@ -384,7 +484,12 @@ def writeItemRecusively(ws,calRow,calCol,processKey,resultList,importList_SQL,ex
                     ws.cell(row=tmpCalRow, column=SQLID_COL, value=value[1])
                     ws.cell(row=tmpCalRow, column=SQL_COL, value=[item["SQL"] for item in importList_SQL if item['funcition'] == value[1]][0])
 
-                ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key[1],resultList,importList_SQL,exValue)   
+                    for sql_Keywords in SQL_TARGETS_LIST:
+                        
+                        if sql_Keywords in [item["SQL"] for item in importList_SQL if item['funcition'] == value[1]][0]:
+                            sqlTargetList.append(sql_Keywords)
+
+                ret = writeItemRecusively(ws,tmpCalRow,tmpCalCol,key[1],resultList,importList_SQL,exValue,sqlTargetList)   
 
                 tmpCalRow=ret+1                
                 
@@ -431,9 +536,10 @@ def runParalell(directory_path,importList_header,importList_detail,importList_SQ
         futures = []
         for entry in os.scandir(directory_path):
             if entry.is_dir(): 
-                file_path = entry.path+"\\output.csv"
+                file_path = entry.path+"\\output.csv"                
                 target = entry.path.split("\\")[-1].replace("_",".")
-                futures.append(executor.submit(call,file_path,target,processdict,importList_header,importList_detail,importList_SQL))
+                parent_path = entry.path+"\\parents.csv"
+                futures.append(executor.submit(call,file_path,target,processdict,importList_header,importList_detail,importList_SQL,parent_path))
 
     for future in concurrent.futures.as_completed(futures):
         try:

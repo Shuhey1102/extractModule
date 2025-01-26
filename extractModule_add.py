@@ -37,8 +37,14 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
                     details = []
                     havetoSerch = False
                     havetoSerch2 = False
+                    in_class_scope = False
+                    classImportPath=""
                     
                     for line_number, line in enumerate(file, start=1):  # 行番号をカウント
+
+                        if line.strip().startswith("package"):
+                            classImportPath=line.replace("package","import").replace(";","").strip()
+                            classDefaultImportPath = ".".join(classImportPath.split(".")[:4])
 
                         # ファイルの中身に対してキーワードを検索
                         for keyword in keywords:
@@ -78,7 +84,18 @@ def search_files_for_keywords_in_folder(folder_path, keywords):
                                 # 一致した場合、結果に追加
                                 results.append([filename, dirpath, detail[1], line.strip(), detail[0], line_number,"d"])
 
-                        if not(line.strip().startswith("import")) and havetoSerch:                        
+                        if not (in_class_scope):                        
+                            class_pattern = re.compile(r'\b(public\s+)?(final\s+)?(class|interface)\s+(\w+)')
+                            
+                            for match in re.finditer(class_pattern, line.strip()):                        
+                                results.append([filename, dirpath, classDefaultImportPath, classImportPath + "." + match.group(4) + ";",match.group(4), line_number,"h"])     
+                                details.append([match.group(4),match.group(4)])
+                                serchVal.append(match.group(4))
+                                in_class_scope = True
+                                havetoSerch = True
+                                havetoSerch2 = True
+
+                        if not(line.strip().startswith("package")) and havetoSerch:                        
                             class_pattern = "|".join(re.escape(item) for item in serchVal)
                             pattern = rf"(\w+)\s*=\s*new\s+({class_pattern})\s*\(.*?\);"
                             
@@ -152,6 +169,8 @@ def main():
     for future in concurrent.futures.as_completed(futures):
         try:
             results = future.result()
+
+
 
             # 結果をフォルダごとのoutput.csvに書き出し
             if results:

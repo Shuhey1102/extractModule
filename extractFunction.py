@@ -9,7 +9,7 @@ import concurrent
 #current datetime
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
-baseURL = "C:\\New_EQPBatch\\New_EQPBatch\\kpi-batch\\src\\"
+baseURL = "C:\\New_EQPBatch\\New_EQPBatch\\emdw-batch\\src\\"
 #baseURL = "C:\\New_EQP-Care(Web)\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 #baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
@@ -70,13 +70,22 @@ class JavaFileAnalyzer:
 
     sb_append_pattern = re.compile(r'sb\.append\s*\(.*?[{}].*?\)')
     comment_pattern = re.compile(r'^\s*//')
-    
+    extends_pattern = re.compile(r'extends\s+(\w+)')
+    implements_pattern = re.compile(r'implements\s+([\w\s,]+)')
+ 
     def __init__(self):
         self.functions = []
+        self.parent_stack = []
 
-    def analyze_file(self, file_path):
+    def analyze_file(self, file_path, parm ,targetFile):
+        """
+            file_path : file_path for searching
+            parm : 0:originalItem / 1 : ExtendsItem
+            targetFile : None:originalItem / Except for None:ExtendsItem
+        """
         stack = []
         dummy_stack = []
+        imports_stack = []
         in_class_scope = False
         in_comment_scope = False
         checkMethod = False
@@ -87,16 +96,67 @@ class JavaFileAnalyzer:
 
             for line_number, line in enumerate(file, 1):
                 
-                # if file.name == "C:\\New_EQPBatch\\New_EQPBatch\\kpi-batch\\src\\jp\\co\\komatsu\\emdw\\batch\\kpi\\dao\\TEMAKSummaryCreateDao.java":
-                #     if line_number > 314:
+                # if file.name == "C:\\New_EQPBatch\\New_EQPBatch\\emdw-batch-kowa-step2\\src\\jp\\co\\komatsu\\emdw\\batch\\KOWAMailBatchInvoker.java":
+                # #     # if line_number > 314:
                 #         print()
                 # else:
                 #     continue
+
+                if line.strip().startswith("import"):
+                    imports_stack.append(baseURL + line.replace("import","").replace(";","").replace(".","\\").strip()+".java")
 
                 # Class or Interface Detection
                 if not (in_class_scope) and self.class_pattern.search(line):
                     in_class_scope = True
                     className = line.strip().split('{')[0].strip()
+                    extendsWK = self.extends_pattern.search(line)
+                    if extendsWK:
+                        extendstmp = extendsWK.group(1).rsplit("throws", 1)[0]
+                        extendsFilePath = ""
+                        for importsItem in imports_stack:
+                            importsItemTmp = importsItem.split("\\")[-1].replace(".java","")                     
+                            if importsItemTmp == extendstmp:
+                                extendsFilePath = importsItem
+                                break
+
+                        if extendsFilePath == '':
+                            extendsFilePath = "\\".join(file.name.split("\\")[:-1]) + "\\"+ extendstmp +".java"
+
+                        parent_Folder = '.'.join(file.name.replace(baseURL,"").split("\\")[:5])
+                        child_Folder = '.'.join(extendsFilePath.replace(baseURL,"").split("\\")[:5])                                                
+                        defaultPath = '.'.join(file.name.replace(baseURL,"").split("\\")[:3])
+
+                        if not(child_Folder.startswith(defaultPath)):
+                            continue
+
+                        self.parent_stack.append([file.name,extendsFilePath,parent_Folder,child_Folder])
+
+
+                    implementsWK = self.implements_pattern.search(line)
+                    if implementsWK:
+                        implementstmpWkString = implementsWK.group(1).rsplit("throws", 1)[0].strip()
+                        implementstmpWkList = implementstmpWkString.split(",")
+                       
+                        for implementstmp in implementstmpWkList:
+
+                            extendsFilePath = ""
+                            for importsItem in imports_stack:
+                                importsItemTmp = importsItem.split("\\")[-1].replace(".java","")                   
+                                if importsItemTmp == implementstmp.strip():
+                                    extendsFilePath = importsItem
+                                    break
+
+                            if extendsFilePath == '':
+                              extendsFilePath = "\\".join(file.name.split("\\")[:-1]) + "\\" + implementstmp.strip() +".java"
+
+                            parent_Folder = '.'.join(file.name.replace(baseURL,"").split("\\")[:5])
+                            child_Folder = '.'.join(extendsFilePath.replace(baseURL,"").split("\\")[:5])
+                            defaultPath = '.'.join(file.name.replace(baseURL,"").split("\\")[:2])
+
+                            if not(child_Folder.startswith(defaultPath)):
+                                continue
+
+                            self.parent_stack.append([file.name,extendsFilePath,parent_Folder,child_Folder])
                     continue                    
 
                 if not(in_comment_scope) and line.strip().startswith("/*") and not(line.strip().endswith("*/")):
@@ -105,7 +165,7 @@ class JavaFileAnalyzer:
                 if in_comment_scope and line.strip().endswith("*/"):
                     in_comment_scope = False
                     continue
-
+            
                 if not(in_comment_scope):
                     # Skip Comment
                     if self.comment_pattern.search(line):
@@ -114,7 +174,7 @@ class JavaFileAnalyzer:
                     # skip if "{}" is included in sb.append
                     if self.sb_append_pattern.search(line):
                         continue
-
+                    
                     # Function Detection using `{` split to get function signature
                     if in_class_scope and self.method_pattern.search(line) and not(checkMethod):
                         
@@ -186,9 +246,13 @@ class JavaFileAnalyzer:
                             self.functions.append(function_obj)
                         else:
                             in_class_scope = False  # クラススコープ終了
-
+        
     def get_functions(self):
         return self.functions
+
+    def get_parent_relations(self):
+        return self.parent_stack
+
 
 def analyze_java_files_in_directory(directory_path,targetName):
         
@@ -197,7 +261,7 @@ def analyze_java_files_in_directory(directory_path,targetName):
         for file in files:
             if file.endswith('.java'):
                 file_path = os.path.join(root, file)
-                analyzer.analyze_file(file_path)
+                analyzer.analyze_file(file_path,0,None)
 
     output_dir = crrDir + "\\output\\list\\" + targetName    
     os.mkdir(output_dir)
@@ -207,8 +271,14 @@ def analyze_java_files_in_directory(directory_path,targetName):
         writer = csv.writer(file)
         writer.writerow(['fileName','class', 'function', 'startNum','endNum','fileNameFull']) 
         for function in analyzer.get_functions():
-          writer.writerow([function.FileName,function.className, function.function_name, function.start_line, function.end_line,function.ClassNameFull])
-        
+          writer.writerow([function.FileName,function.className, function.function_name, function.start_line, function.end_line,function.ClassNameFull])        
+
+    output_file = output_dir +  "\\parents.csv"
+    with open(output_file, mode='a', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(['parent_path','child_path','parent_folder','child_folder']) 
+        for function in analyzer.get_parent_relations():
+          writer.writerow([function[0],function[1],function[2],function[3]])        
 
     return analyzer.get_functions()
     
