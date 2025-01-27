@@ -54,15 +54,12 @@ def search_files_for_keywords_in_folder(folder_path,file_name, keywords,OKExtent
 
     return results
 
-def write_results_to_csv(results, output_dir,cnt):
+def write_results_to_csv(results, output_dir):
     # 結果をCSVファイルに書き出し
     #os.makedirs(output_dir, exist_ok=True)
     output_file = os.path.join(output_dir, outputFilename)
     with open(output_file, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        if cnt == 0 :
-            #writer.writerow(['FileName', 'ParentPath', 'targetWord','line','Funcition','colNum','header/detail']) 
-            writer.writerow(['FileName', 'ParentPath', 'targetWord','colNum']) 
         writer.writerows(results)    
 
 def process_folder(folder_path,file_name, keywords,OKExtention):
@@ -126,7 +123,13 @@ def main():
             for filename in filenames:
                 futures.append(executor.submit(process_folder, dirpath, filename, keywords,OKExtention))                
 
-    cnt = 0
+    output_dir = f"{crrDir}\\output\\"                                                
+    output_file = os.path.join(output_dir, outputFilename)
+    with open(output_file, mode='a', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        #writer.writerow(['FileName', 'ParentPath', 'targetWord','line','Funcition','colNum','header/detail']) 
+        writer.writerow(['FileName', 'ParentPath', 'targetWord','colNum']) 
+
     for future in concurrent.futures.as_completed(futures):
         try:
             results = future.result()
@@ -134,9 +137,7 @@ def main():
             # 結果をフォルダごとのoutput.csvに書き出し
             if results:
                 #output_dir = os.path.join(folder_path, 'output')
-                output_dir = f"{crrDir}\\output\\"                                                
-                write_results_to_csv(results, output_dir,cnt)
-                cnt+=1
+                write_results_to_csv(results, output_dir)
 
         except Exception as e:
             print(f"Error processing folder: {e}")
