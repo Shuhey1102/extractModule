@@ -561,8 +561,8 @@ def runParalell(directory_path,importList_header,importList_detail,importList_SQ
         for resultKey,resultValue in resultList.items():
             if not(any(resultKey[0] == key[1]  for key in resultList.keys())) and not(resultValue[2]):
                 if not(resultKey[0] in processDict):
-                    # processDict[resultKey[0]] = {"function":resultValue[0],"fileName":resultKey[0].split("\\")[-1]}
-                    processDict[resultKey[0]] = {"function":resultValue[0],"fileName":resultValue[0].split("_")[-1]+".java"}
+                    processDict[resultKey[0]] = {"function":resultValue[0],"fileName":resultKey[0].split("\\")[-1].split("_")[0]}
+                    # processDict[resultKey[0]] = {"function":resultValue[0],"fileName":resultValue[0].split("_")[-1]+".java"}
             writer.writerow([resultKey[0],resultKey[1],resultValue[0],resultValue[1],resultValue[2]])
             #resultList[resultKey][2] = True                               
         processDict = OrderedDict(sorted(processDict.items()))

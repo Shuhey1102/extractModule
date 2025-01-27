@@ -9,8 +9,8 @@ import concurrent
 #current datetime
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
-baseURL = "C:\\New_EQPBatch\\New_EQPBatch\\emdw-batch\\src\\"
-#baseURL = "C:\\New_EQP-Care(Web)\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
+#baseURL = "C:\\New_EQPBatch\\New_EQPBatch\\emdw-batch\\src\\"
+baseURL = "C:\\New_EQP-Care(Web)\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 #baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
 class FunctionInfo:
@@ -91,6 +91,7 @@ class JavaFileAnalyzer:
         checkMethod = False
         tmpline_number = 0
         tmpFunction_signature = ""
+        checkExclude = False
 
         with open(file_path, 'r', encoding='utf-8') as file:
 
@@ -180,24 +181,36 @@ class JavaFileAnalyzer:
                         
                         # checkExclude = False
                         function_signature = line.strip().split('{')[0].strip()
-                        # for key in self.EXCLUDE_KEYWORDS:
-                        #     if key == function_signature.split('(')[0].split()[-1]:
-                        #         checkExclude = True
-                        #         break
+                        for key in self.EXCLUDE_KEYWORDS:
+                            if key == function_signature.split('(')[0].split()[-1]:
+                                checkExclude = True
+                                break
 
-                        # if checkExclude:
-                        #     continue
+                        if checkExclude:
+                            checkExclude = False
+                            continue
 
                         function_obj = FunctionInfo(file.name,className,function_signature, line_number, None)
                         stack.append(function_obj)
 
                     elif in_class_scope and self.method_partial_pattern.search(line)  and not(checkMethod):
+
+                        tmpFunction_signature = line.strip()
+                        for key in self.EXCLUDE_KEYWORDS:
+                            if key == tmpFunction_signature.split('(')[0].split()[-1]:
+                                checkExclude = True
+                                break
+
+                        if checkExclude:
+                            checkExclude = False
+                            continue
+
                         checkMethod=True
                         checkOpenPath=False
                         checkClosePath=False
                         firstCheck=True
-                        tmpFunction_signature = line.strip()
                         tmpline_number = line_number
+                        
                     
                     if checkMethod:
                         if line.find("(")!=-1:                        
