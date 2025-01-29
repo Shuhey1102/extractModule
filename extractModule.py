@@ -45,7 +45,7 @@ def search_files_for_keywords_in_folder(folder_path,file_name, keywords,OKExtent
                 for line_number, line in enumerate(file, start=1):  # 行番号をカウント
                     # ファイルの中身に対してキーワードを検索
                     for keyword in keywords:
-                        if keyword in line.upper():
+                        if keyword.upper() in line.upper():
 
                             # 一致した場合、結果に追加
                             results.append([file_name, folder_path, keyword, line.strip(), line_number])                                

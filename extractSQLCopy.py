@@ -17,10 +17,7 @@ def getTimeString():
 def search_files_in_directory(root_dir, pattern):
     # 正規表現パターンをコンパイル
     regex = re.compile(pattern, re.DOTALL)
-
-    
-    fromRegex = re.compile(r"", re.DOTALL)
-
+        
     # 結果を格納するリスト
     results = []
 
@@ -40,7 +37,34 @@ def search_files_in_directory(root_dir, pattern):
 
                 # 一致があれば結果に追加
                 for match in matches:
-                    results.append([filename, dirpath, match[0],match[2]])
+
+                    sql = match[2]
+                    
+
+                    # FROM テーブルの抽出（AS 付きの別名対応）
+                    from_match = re.search(r'FROM\s+([\w.]+)(?:\s+AS\s+(\w+)|\s+(\w+))?', sql, re.IGNORECASE)
+                    from_table = from_match.group(1) if from_match else None
+                    from_alias = from_match.group(2) if from_match and from_match.group(2) else ""
+
+                    # JOIN テーブルと結合条件の抽出
+                    join_matches = re.findall(
+                        r'(?:LEFT|RIGHT|INNER|FULL)?\s*JOIN\s+([\w.]+)(?:\s+AS\s+(\w+)|\s+(\w+))?\s+ON\s+([\w.]+)\s*=\s*([\w.]+)',
+                        sql, re.IGNORECASE
+                    )
+                    if "TEMAB.dicon" == filename:
+                        print()
+
+                    for join in join_matches:
+                        join_table, alias1, alias2, left_condition, right_condition = join
+                        join_alias = alias1 if alias1 else alias2 if alias2 else ""
+
+                        # 結合条件をパース
+                        left_table, left_column = left_condition.split('.') if '.' in left_condition else (from_table, left_condition)
+                        right_table, right_column = right_condition.split('.') if '.' in right_condition else (join_table, right_condition)
+
+                        results.append([filename,dirpath,match[0],join_table,from_table,from_alias, join_alias, left_table, left_column, right_table, right_column])
+
+                    #results.append([filename, dirpath, match[0],match[2]])
 
             except Exception as e:
                 print(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
@@ -51,7 +75,8 @@ def write_to_csv(results, output_file):
     # 結果をCSVファイルに書き出し
     with open(output_file, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        writer.writerow(['ファイル名', '親ディレクトリのパス', 'NAME','SQL'])  # ヘッダー
+        # writer.writerow(['ファイル名', '親ディレクトリのパス', 'NAME','SQL'])  # ヘッダー
+        writer.writerow(['ファイル名', '親ディレクトリのパス',"Name","FROM テーブル", "FROM 別名", "JOIN テーブル", "JOIN 別名", "結合条件"])  # ヘッダー
         writer.writerows(results)
 
 def main():
