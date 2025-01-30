@@ -38,7 +38,7 @@ def search_files_in_directory(root_dir, pattern):
                 # 一致があれば結果に追加
                 for match in matches:
 
-                    sql = match[2]
+                    sql = match[2]                   
                     
 
                     # FROM テーブルの抽出（AS 付きの別名対応）
@@ -51,18 +51,16 @@ def search_files_in_directory(root_dir, pattern):
                         r'(?:LEFT|RIGHT|INNER|FULL)?\s*JOIN\s+([\w.]+)(?:\s+AS\s+(\w+)|\s+(\w+))?\s+ON\s+([\w.]+)\s*=\s*([\w.]+)',
                         sql, re.IGNORECASE
                     )
-                    if "TEMAB.dicon" == filename:
-                        print()
 
                     for join in join_matches:
                         join_table, alias1, alias2, left_condition, right_condition = join
                         join_alias = alias1 if alias1 else alias2 if alias2 else ""
 
                         # 結合条件をパース
-                        left_table, left_column = left_condition.split('.') if '.' in left_condition else (from_table, left_condition)
-                        right_table, right_column = right_condition.split('.') if '.' in right_condition else (join_table, right_condition)
+                        left_table, left_column = left_condition.rsplit('.',1) if '.' in left_condition else (from_table, left_condition)
+                        right_table, right_column = right_condition.rsplit('.',1) if '.' in right_condition else (join_table, right_condition)
 
-                        results.append([filename,dirpath,match[0],join_table,from_table,from_alias, join_alias, left_table, left_column, right_table, right_column])
+                        results.append([filename,dirpath,match[0],from_table,from_alias,join_table, join_alias,left_column,right_column])
 
                     #results.append([filename, dirpath, match[0],match[2]])
 
@@ -76,7 +74,7 @@ def write_to_csv(results, output_file):
     with open(output_file, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         # writer.writerow(['ファイル名', '親ディレクトリのパス', 'NAME','SQL'])  # ヘッダー
-        writer.writerow(['ファイル名', '親ディレクトリのパス',"Name","FROM テーブル", "FROM 別名", "JOIN テーブル", "JOIN 別名", "結合条件"])  # ヘッダー
+        writer.writerow(['ファイル名', '親ディレクトリのパス',"Name","FROM テーブル", "FROM 別名", "JOIN テーブル", "JOIN 別名", "左フィールド", "右フィールド"])  # ヘッダー
         writer.writerows(results)
 
 def main():
@@ -85,7 +83,9 @@ def main():
     #pattern = input("検索する正規表現を入力してください: ")
     
     root_dir = input("検索対象のフォルダのパスを入力してください: ")
+    # pattern = r"<component name=\"(.*?)\"(.*?)>(.*?)</component>"
     pattern = r"<component name=\"(.*?)\"(.*?)>(.*?)</component>"
+
 
     output_file = f"{crrDir}\\output\\extractSQL_{getTimeString()}.csv"
 
