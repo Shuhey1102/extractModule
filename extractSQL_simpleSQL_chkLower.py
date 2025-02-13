@@ -14,6 +14,30 @@ def getTimeString():
     """        
     return dt_now.strftime('%Y%m%d%H%M%S')
 
+def check_lowercase_in_sql(xml_string):
+    # コメントを除去
+    xml_string = re.sub(r'<!--.*?-->', '', xml_string, flags=re.DOTALL)
+    # エスケープされたタグを通常のタグに変換
+    xml_string = xml_string.replace('&lt;', '<').replace('&gt;', '>').replace('count(*)', 'COUNT(*)').replace('inner join', 'INNER JOIN').replace('left join', 'LEFT JOIN').replace('trim(', 'TRIM(').replace(' as ', ' AS ').replace("'yyyymm'","'YYYYMM'")
+
+    # # パターン1: <property name="...sql..."> (大文字・小文字区別なし)
+    # property_pattern = re.compile(r'(?i)<property name="[^"]*sql[^"]*">\s*"(.*?)"', re.DOTALL)
+    # # パターン2: <initMethod ...> の中の <arg>タグの中身
+    # initmethod_pattern = re.compile(r'<initMethod[^>]*>\s*<arg>\s*"(.*?)"', re.DOTALL)
+
+    targetsWord = ""
+
+    # 対象SQLを抽出
+    # sql_statements = []
+    # sql_statements += property_pattern.findall(xml_string)
+    # sql_statements += initmethod_pattern.findall(xml_string)
+
+    # 小文字を含むか判定
+    if re.search(r'[a-z]', xml_string):
+        targetsWord += xml_string + " "
+
+    return targetsWord
+
 def search_files_in_directory(root_dir, pattern):
     # 正規表現パターンをコンパイル
     regex = re.compile(pattern, re.DOTALL)
@@ -27,8 +51,7 @@ def search_files_in_directory(root_dir, pattern):
             file_path = os.path.join(dirpath, filename)
 
             try:
-                if file_path.endswith(".sql"):
-#                if file_path.endswith(".properties"):
+                if file_path.endwith(".sql"):
                     # ファイルを開いて内容を読み込む
                     with open(file_path, 'r', encoding='utf-8') as file:
                         file_content = file.read()
@@ -39,31 +62,11 @@ def search_files_in_directory(root_dir, pattern):
 
                     # # 一致があれば結果に追加
                     # for match in matches:
-                    # results.append([filename, dirpath, filename,file_content])
+
                     
-                # 一致があれば結果に追加
-                    # FROM テーブルの抽出（AS 付きの別名対応）
-                    sql = file_content
-                    from_match = re.search(r'FROM\s+([\w.]+)(?:\s+AS\s+(\w+)|\s+(\w+))?', sql, re.IGNORECASE)
-                    from_table = from_match.group(1) if from_match else None
-                    from_alias = from_match.group(2) if from_match and from_match.group(2) else ""
-
-                    # JOIN テーブルと結合条件の抽出
-                    join_matches = re.findall(
-                        r'(?:LEFT|RIGHT|INNER|FULL)?\s*JOIN\s+([\w.]+)(?:\s+AS\s+(\w+)|\s+(\w+))?\s+ON\s+([\w.]+)\s*=\s*([\w.]+)',
-                        sql, re.IGNORECASE
-                    )
-
-                    for join in join_matches:
-                        join_table, alias1, alias2, left_condition, right_condition = join
-                        join_alias = alias1 if alias1 else alias2 if alias2 else ""
-
-                        # 結合条件をパース
-                        left_table, left_column = left_condition.rsplit('.',1) if '.' in left_condition else (from_table, left_condition)
-                        right_table, right_column = right_condition.rsplit('.',1) if '.' in right_condition else (join_table, right_condition)
-
-                        results.append([filename,dirpath,filename,from_table,from_alias,join_table, join_alias,left_column,right_column])
-
+                    sqlNGString = check_lowercase_in_sql(file_content)
+                    if sqlNGString != "":
+                        results.append([filename, dirpath, filename,file_content,sqlNGString])
 
             except Exception as e:
                 print(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
@@ -74,8 +77,7 @@ def write_to_csv(results, output_file):
     # 結果をCSVファイルに書き出し
     with open(output_file, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        # writer.writerow(['ファイル名', '親ディレクトリのパス', 'NAME','SQL'])  # ヘッダー
-        writer.writerow(['ファイル名', '親ディレクトリのパス',"Name","FROM テーブル", "FROM 別名", "JOIN テーブル", "JOIN 別名", "左フィールド", "右フィールド"])  # ヘッダー
+        writer.writerow(['ファイル名', '親ディレクトリのパス', 'NAME','SQL','NG'])  # ヘッダー
         writer.writerows(results)
 
 def main():
