@@ -28,7 +28,6 @@ def search_files_in_directory(root_dir, pattern):
 
             try:
                 if file_path.endswith(".sql"):
-#                if file_path.endswith(".properties"):
                     # ファイルを開いて内容を読み込む
                     with open(file_path, 'r', encoding='utf-8') as file:
                         file_content = file.read()
@@ -61,6 +60,11 @@ def search_files_in_directory(root_dir, pattern):
                         # 結合条件をパース
                         left_table, left_column = left_condition.rsplit('.',1) if '.' in left_condition else (from_table, left_condition)
                         right_table, right_column = right_condition.rsplit('.',1) if '.' in right_condition else (join_table, right_condition)
+
+                        if (left_table == join_table or left_table == join_alias) and (right_table == from_table or right_table == from_alias):
+                            tmpColumn = right_column
+                            left_column = right_column
+                            right_column = tmpColumn
 
                         results.append([filename,dirpath,filename,from_table,from_alias,join_table, join_alias,left_column,right_column])
 

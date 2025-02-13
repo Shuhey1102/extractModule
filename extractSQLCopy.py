@@ -34,35 +34,66 @@ def search_files_in_directory(root_dir, pattern):
                 # ファイルの中身が正規表現に一致する場合
                 matches = regex.findall(file_content)
                 # matches = regex.findall(file_content.replace("\n",""))
-
+                
                 # 一致があれば結果に追加
                 for match in matches:
 
-                    sql = match[2]                   
-                    
+                    sql = match[2]                                       
 
                     # FROM テーブルの抽出（AS 付きの別名対応）
+#                    if filename !="From.dion"
                     from_match = re.search(r'FROM\s+([\w.]+)(?:\s+AS\s+(\w+)|\s+(\w+))?', sql, re.IGNORECASE)
-                    from_table = from_match.group(1) if from_match else None
+                    from_table = from_match.group(1) if from_match else ""
                     from_alias = from_match.group(2) if from_match and from_match.group(2) else ""
-
                     # JOIN テーブルと結合条件の抽出
                     join_matches = re.findall(
                         r'(?:LEFT|RIGHT|INNER|FULL)?\s*JOIN\s+([\w.]+)(?:\s+AS\s+(\w+)|\s+(\w+))?\s+ON\s+([\w.]+)\s*=\s*([\w.]+)',
                         sql, re.IGNORECASE
                     )
 
-                    for join in join_matches:
-                        join_table, alias1, alias2, left_condition, right_condition = join
-                        join_alias = alias1 if alias1 else alias2 if alias2 else ""
+                    if len(join_matches)>0:
+                        for join in join_matches:
+                            join_table, alias1, alias2, left_condition, right_condition = join
+                            join_alias = alias1 if alias1 else alias2 if alias2 else ""
 
-                        # 結合条件をパース
-                        left_table, left_column = left_condition.rsplit('.',1) if '.' in left_condition else (from_table, left_condition)
-                        right_table, right_column = right_condition.rsplit('.',1) if '.' in right_condition else (join_table, right_condition)
+                            # 結合条件をパース
+                            left_table, left_column = left_condition.rsplit('.',1) if '.' in left_condition else (from_table, left_condition)
+                            right_table, right_column = right_condition.rsplit('.',1) if '.' in right_condition else (join_table, right_condition)
 
-                        results.append([filename,dirpath,match[0],from_table,from_alias,join_table, join_alias,left_column,right_column])
+                            if (left_table == join_table or left_table == join_alias) and (right_table == from_table or right_table == from_alias):
+                                tmpColumn = right_column
+                                left_column = right_column
+                                right_column = tmpColumn
+
+                            results.append([filename,dirpath,match[0],from_table,from_alias,join_table, join_alias,left_column,right_column])
+
+                    elif sql.upper().find("JOIN")==-1 and filename == "From.dicon":
+                        # JOIN テーブルと結合条件の抽出
+                        join_matches = re.findall(
+                            r'\s*([\w.]+)\s*=\s*([\w.]+)',
+                            sql, re.IGNORECASE
+                        )
+                        for join in join_matches:
+                            join_table  = ""
+                            alias1  = ""
+                            alias2  = ""
+                            left_condition, right_condition = join
+                            join_alias = alias1 if alias1 else alias2 if alias2 else ""
+
+                            # 結合条件をパース
+                            left_table, left_column = left_condition.rsplit('.',1) if '.' in left_condition else (from_table, left_condition)
+                            right_table, right_column = right_condition.rsplit('.',1) if '.' in right_condition else (join_table, right_condition)
+
+                            if (left_table == join_table or left_table == join_alias) and (right_table == from_table or right_table == from_alias):
+                                tmpColumn = right_column
+                                left_column = right_column
+                                right_column = tmpColumn
+
+                            results.append([filename,dirpath,match[0],from_table,from_alias,join_table, join_alias,left_column,right_column])
+
 
                     #results.append([filename, dirpath, match[0],match[2]])
+                    
 
             except Exception as e:
                 print(f"エラー: {file_path} を読み込む際に問題が発生しました: {e}")
