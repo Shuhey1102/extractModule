@@ -10,7 +10,7 @@ import concurrent
 dt_now = datetime.datetime.now()
 crrDir = os.path.dirname(__file__)
 #baseURL = "C:\\New_EQPBatch\\New_EQPBatch\\emdw-batch\\src\\"
-baseURL = "C:\\New_EQPBatch\\New_EQPBatch\\emdw-batch\\src\\"
+baseURL = "C:\\NewEQPBatch\\NewEQPBatch\\emdw-batch-kowa-step2\\src\\"
 #baseURL = "N:\\New_EQP-Care(Web)\\emd-web-struts2.5\\src\\"
 
 class FunctionInfo:
@@ -35,7 +35,7 @@ class JavaFileAnalyzer:
     # 除外キーワードのリスト
     EXCLUDE_KEYWORDS = [
         "if", "while", "for", "switch", "catch",  # 制御構文
-        "IllegalArgumentException", "RuntimeException", "IllegalStateException","SQLRuntimeException", # 例外
+        "Error","IllegalArgumentException", "RuntimeException", "IllegalStateException","SQLRuntimeException", # 例外
         "ArrayList", "HashMap", "LinkedList",  # クラス名
     ]
     # キーワードを正規表現形式に
@@ -67,6 +67,7 @@ class JavaFileAnalyzer:
     #     rf'\s*\{{'
     # )
     method_pattern = re.compile(r'^[ \t]*(public|protected|private|static|final|\s)*\s*(static|final|\s)?\s*(\w+(\[\])?|\w+<([^<>]*(?:<[^<>]*>[^<>]*)*)>)\s+(?!{exclude_pattern})\w+\s*\([^)]*\)(\s*throws\s+\w+(\s*,\s*\w+)*)?\s*\{')
+    method_abstract_pattern = re.compile(r'^[ \t]*(public|protected|private)?\s*(static|final|abstract)?\s*(\w+(\[\])?|\w+<([^<>]*(?:<[^<>]*>[^<>]*)*)>)\s+\w+\s*\([^)]*\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*;')    
 
     sb_append_pattern = re.compile(r'sb\.append\s*\(.*?[{}].*?\)')
     comment_pattern = re.compile(r'^\s*//')
@@ -192,6 +193,23 @@ class JavaFileAnalyzer:
 
                         function_obj = FunctionInfo(file.name,className,function_signature, line_number, None)
                         stack.append(function_obj)
+                    
+                    elif in_class_scope and self.method_abstract_pattern.search(line)and not(checkMethod):
+                        
+                        # checkExclude = False
+                        function_signature = line.strip().split('{')[0].strip()
+                        for key in self.EXCLUDE_KEYWORDS:
+                            if key == function_signature.split('(')[0].split()[-1]:
+                                checkExclude = True
+                                break
+
+                        if checkExclude:
+                            checkExclude = False
+                            continue
+
+                        function_obj = FunctionInfo(file.name,className,function_signature, line_number, None)
+                        stack.append(function_obj)
+
 
                     elif in_class_scope and self.method_partial_pattern.search(line)  and not(checkMethod):
 
