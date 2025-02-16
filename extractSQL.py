@@ -17,7 +17,10 @@ def getTimeString():
 def search_files_in_directory(root_dir, pattern):
     # 正規表現パターンをコンパイル
     regex = re.compile(pattern, re.DOTALL)
+
     
+    fromRegex = re.compile(r"", re.DOTALL)
+
     # 結果を格納するリスト
     results = []
 
