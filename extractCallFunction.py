@@ -563,16 +563,16 @@ def runParalell(directory_path,importList_header,importList_detail,importList_SQ
                 if not(resultKey[0] in processDict):
                     fileNameUpper = resultKey[0].split("\\")[-1].split("_")[0]
                     fileName = resultValue[0].split("_")[-1]+".java"
-                    tmpFileName = resultValue[0].split("_")[:-1]
+                    tmpFileList = "_".join(resultValue[0].split("_")[:-1])
                     while True:
-                        if tmpFileName.upper() == fileNameUpper:
+                        if fileName.upper() == fileNameUpper:
                             break
                         else:
-                            fileName = tmpFileName.split("_")[-1] + "_" + fileName
-                            tmpFileName = tmpFileName.split("_")[:-1]
+                            fileName = tmpFileList.split("_")[-1] + "_" + fileName
+                            tmpFileList = tmpFileList.split("_")[:-1]
                 
-                    processDict[resultKey[0]] = {"function":resultValue[0],"fileName":resultKey[0].split("\\")[-1].split("_")[0]}
-
+                    processDict[resultKey[0]] = {"function":resultValue[0],"fileName":fileName}
+                    # processDict[resultKey[0]] = {"function":resultValue[0],"fileName":resultKey[0].split("\\")[-1].split("_")[0]}
                     # processDict[resultKey[0]] = {"function":resultValue[0],"fileName":resultValue[0].split("_")[-1]+".java"}
             writer.writerow([resultKey[0],resultKey[1],resultValue[0],resultValue[1],resultValue[2]])
             #resultList[resultKey][2] = True                               
