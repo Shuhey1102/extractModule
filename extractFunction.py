@@ -219,7 +219,7 @@ class JavaFileAnalyzer:
                         if line.find(")")!=-1:                        
                             checkClosePath = True
 
-                        if line.strip().find("{")!=-1:                        
+                        if line.strip().find("{")!=-1 or line.find(");")!=-1:                        
                             if (checkOpenPath and checkClosePath) and self.method_pattern.search(tmpFunction_signature + ' ' +line.strip()):                                        
                                 function_signature = tmpFunction_signature + line.strip().split('{')[0].strip()
                                 function_obj = FunctionInfo(file.name,className,function_signature, tmpline_number, None)

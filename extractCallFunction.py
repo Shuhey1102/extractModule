@@ -175,13 +175,13 @@ def parentWk(pair,processdict,parentPairs,line,matches,tmpFunctionList,line_numb
                     continue
 
                 parentKey = str.upper(callFunc["fileNameFull"] + "_" + caller_function_name)
-                childKey = str.upper(callFunc["fileNameFull"] + "_" + callee_function_name)
+                childKey = str.upper(tmpChildPath + "_" + callee_function_name)
                 
                 if (parentKey,childKey) in retDist :
                     continue
                 
-                retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc['fileName'], callee_function_name+"_"+ callFunc['fileName'],False] #0:Function / 1:SQL
-                print(parentKey+","+childKey+","+caller_function_name+"_"+ callFunc['fileName']+","+callee_function_name+"_"+ callFunc['fileName'])
+                retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc['fileName'], tmpChildPath+"_"+ callFunc['fileName'],False] #0:Function / 1:SQL
+                print(parentKey+","+childKey+","+caller_function_name+"_"+ tmpChildPath+","+callee_function_name+"_"+ callFunc['fileName'])
 
         else:
             pairList = [item for item in parentPairs if item["parent_path"] == pair["child_path"]]
