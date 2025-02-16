@@ -180,7 +180,7 @@ def parentWk(pair,processdict,parentPairs,line,matches,tmpFunctionList,line_numb
                 if (parentKey,childKey) in retDist :
                     continue
                 
-                retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc['fileName'], tmpChildPath+"_"+ callFunc['fileName'],False] #0:Function / 1:SQL
+                retDist[(parentKey,childKey)] = [caller_function_name+"_"+ callFunc['fileName'], callee_function_name+"_"+ callFunc['fileName'],False] #0:Function / 1:SQL
                 print(parentKey+","+childKey+","+caller_function_name+"_"+ tmpChildPath+","+callee_function_name+"_"+ callFunc['fileName'])
 
         else:
@@ -561,7 +561,18 @@ def runParalell(directory_path,importList_header,importList_detail,importList_SQ
         for resultKey,resultValue in resultList.items():
             if not(any(resultKey[0] == key[1]  for key in resultList.keys())) and not(resultValue[2]):
                 if not(resultKey[0] in processDict):
+                    fileNameUpper = resultKey[0].split("\\")[-1].split("_")[0]
+                    fileName = resultValue[0].split("_")[-1]+".java"
+                    tmpFileName = resultValue[0].split("_")[:-1]
+                    while True:
+                        if tmpFileName.upper() == fileNameUpper:
+                            break
+                        else:
+                            fileName = tmpFileName.split("_")[-1] + "_" + fileName
+                            tmpFileName = tmpFileName.split("_")[:-1]
+                
                     processDict[resultKey[0]] = {"function":resultValue[0],"fileName":resultKey[0].split("\\")[-1].split("_")[0]}
+
                     # processDict[resultKey[0]] = {"function":resultValue[0],"fileName":resultValue[0].split("_")[-1]+".java"}
             writer.writerow([resultKey[0],resultKey[1],resultValue[0],resultValue[1],resultValue[2]])
             #resultList[resultKey][2] = True                               

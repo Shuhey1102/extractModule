@@ -53,6 +53,8 @@ def search_files_in_directory(root_dir, pattern):
                         sql, re.IGNORECASE
                     )
 
+                    
+
                     for join in join_matches:
                         join_table, alias1, alias2, left_condition, right_condition = join
                         join_alias = alias1 if alias1 else alias2 if alias2 else ""
