@@ -51,7 +51,7 @@ def search_files_in_directory(root_dir, pattern):
             file_path = os.path.join(dirpath, filename)
 
             try:
-                if file_path.endwith(".sql"):
+                if file_path.endswith(".sql"):
                     # ファイルを開いて内容を読み込む
                     with open(file_path, 'r', encoding='utf-8') as file:
                         file_content = file.read()

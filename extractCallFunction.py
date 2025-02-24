@@ -565,11 +565,11 @@ def runParalell(directory_path,importList_header,importList_detail,importList_SQ
                     fileName = resultValue[0].split("_")[-1]+".java"
                     tmpFileList = "_".join(resultValue[0].split("_")[:-1])
                     while True:
-                        if fileName.upper() == fileNameUpper:
+                        if str.upper(fileName) == fileNameUpper:
                             break
                         else:
                             fileName = tmpFileList.split("_")[-1] + "_" + fileName
-                            tmpFileList = tmpFileList.split("_")[:-1]
+                            tmpFileList = "_".join(tmpFileList.split("_")[:-1])
                 
                     processDict[resultKey[0]] = {"function":resultValue[0],"fileName":fileName}
                     # processDict[resultKey[0]] = {"function":resultValue[0],"fileName":resultKey[0].split("\\")[-1].split("_")[0]}

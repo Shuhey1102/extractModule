@@ -18,8 +18,9 @@ def check_lowercase_in_sql(xml_string):
     # コメントを除去
     xml_string = re.sub(r'<!--.*?-->', '', xml_string, flags=re.DOTALL)
     # エスケープされたタグを通常のタグに変換
-    xml_string = xml_string.replace('&lt;', '<').replace('&gt;', '>').replace('count(*)', 'COUNT(*)').replace('inner join', 'INNER JOIN').replace('left join', 'LEFT JOIN').replace('trim(', 'TRIM(').replace(' as ', ' AS ').replace("'yyyymm'","'YYYYMM'")
-
+    xml_string = xml_string.replace('&lt;', '<').replace('&gt;', '>').replace('count(*)', 'COUNT(*)').replace('inner join', 'INNER JOIN')
+    xml_string = xml_string.replace('left join', 'LEFT JOIN').replace('trim(', 'TRIM(').replace(' as ', ' AS ').replace("'yyyymm'","'YYYYMM'")
+    xml_string = xml_string.replace(" and "," AND ").replace(" or "," OR ").replace(" where "," WHERE ")
 
     # パターン1: <property name="...sql..."> (大文字・小文字区別なし)
     property_pattern = re.compile(r'(?i)<property name="[^"]*sql[^"]*">\s*"(.*?)"', re.DOTALL)
